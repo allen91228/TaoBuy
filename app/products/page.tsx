@@ -1,6 +1,7 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, Suspense } from "react"
+import { useSearchParams } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
@@ -20,7 +21,9 @@ interface Product {
   updatedAt: string
 }
 
-export default function ProductsPage() {
+function ProductsContent() {
+  const searchParams = useSearchParams()
+  const searchQuery = searchParams.get('search') || ''
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -28,7 +31,10 @@ export default function ProductsPage() {
   useEffect(() => {
     async function fetchProducts() {
       try {
-        const response = await fetch('/api/products')
+        const url = searchQuery 
+          ? `/api/products?search=${encodeURIComponent(searchQuery)}`
+          : '/api/products'
+        const response = await fetch(url)
         const data = await response.json()
         
         if (data.success) {
@@ -45,7 +51,7 @@ export default function ProductsPage() {
     }
     
     fetchProducts()
-  }, [])
+  }, [searchQuery])
 
   const formatPrice = (price: number | string): number => {
     if (typeof price === 'string') {
@@ -77,8 +83,12 @@ export default function ProductsPage() {
   return (
     <div className="container py-12">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">商品列表</h1>
-        <p className="text-muted-foreground">瀏覽我們精選的商品</p>
+        <h1 className="text-3xl font-bold mb-2">
+          {searchQuery ? `搜尋結果: "${searchQuery}"` : '商品列表'}
+        </h1>
+        <p className="text-muted-foreground">
+          {searchQuery ? `找到 ${products.length} 個商品` : '瀏覽我們精選的商品'}
+        </p>
       </div>
 
       {products.length === 0 ? (
@@ -134,6 +144,20 @@ export default function ProductsPage() {
         </div>
       )}
     </div>
+  )
+}
+
+export default function ProductsPage() {
+  return (
+    <Suspense fallback={
+      <div className="container py-12">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <p className="text-muted-foreground">載入中...</p>
+        </div>
+      </div>
+    }>
+      <ProductsContent />
+    </Suspense>
   )
 }
 

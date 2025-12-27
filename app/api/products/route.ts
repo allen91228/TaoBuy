@@ -10,11 +10,30 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams
     const limit = parseInt(searchParams.get('limit') || '100')
     const offset = parseInt(searchParams.get('offset') || '0')
+    const search = searchParams.get('search') || ''
     
     // 定義查詢條件
-    const whereCondition = {
+    const whereCondition: any = {
       isActive: true,
       importStatus: ImportStatus.PUBLISHED, // 使用 enum 而不是字符串
+    }
+
+    // 如果有搜尋關鍵字，添加搜尋條件（搜尋商品名稱和描述）
+    if (search.trim()) {
+      whereCondition.OR = [
+        {
+          name: {
+            contains: search,
+            mode: 'insensitive',
+          },
+        },
+        {
+          description: {
+            contains: search,
+            mode: 'insensitive',
+          },
+        },
+      ]
     }
     
     // 記錄查詢條件（用於調試）
