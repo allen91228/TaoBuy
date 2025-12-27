@@ -23,43 +23,98 @@ export default function Home() {
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
-  const [offset, setOffset] = useState(6) // 初始为6，因为已加载6个
+  const [offset, setOffset] = useState(0)
   const [hasMore, setHasMore] = useState(true)
   const [total, setTotal] = useState(0)
+  const [itemsPerLoad, setItemsPerLoad] = useState(6) // 动态计算每次加载的数量
   const loadMoreTriggerRef = useRef<HTMLDivElement>(null)
 
-  // 初始加载商品
+  // 根据屏幕宽度计算每次加载的商品数量
+  const calculateItemsPerLoad = useCallback(() => {
+    if (typeof window === 'undefined') return 6
+
+    const width = window.innerWidth
+    
+    // 根据 Tailwind 断点计算列数
+    let columns = 1 // 默认1列（移动端）
+    if (width >= 1280) {
+      columns = 4 // xl: 4列
+    } else if (width >= 1024) {
+      columns = 3 // lg: 3列
+    } else if (width >= 640) {
+      columns = 2 // sm: 2列
+    }
+    
+    // 每次加载2-3行的商品，确保有足够的商品填充屏幕
+    return columns * 2 // 2行商品
+  }, [])
+
+  // 监听窗口大小变化，更新每次加载的数量
   useEffect(() => {
+    const updateItemsPerLoad = () => {
+      setItemsPerLoad(calculateItemsPerLoad())
+    }
+
+    // 初始设置
+    updateItemsPerLoad()
+
+    // 监听窗口大小变化
+    window.addEventListener('resize', updateItemsPerLoad)
+    
+    return () => {
+      window.removeEventListener('resize', updateItemsPerLoad)
+    }
+  }, [calculateItemsPerLoad])
+
+  // 初始加载商品（只在组件首次挂载时执行一次）
+  useEffect(() => {
+    let isMounted = true
+
     async function fetchProducts() {
       try {
-        // 只取得最新的 6 個商品（已經按創建時間倒序）
-        const response = await fetch('/api/products?limit=6&offset=0')
+        // 计算初始加载数量
+        const initialLimit = typeof window !== 'undefined' 
+          ? calculateItemsPerLoad() 
+          : 6
+        
+        const response = await fetch(`/api/products?limit=${initialLimit}&offset=0`)
         const data = await response.json()
         
-        if (data.success) {
+        if (data.success && isMounted) {
           setFeaturedProducts(data.products)
           setTotal(data.total || 0)
+          setOffset(data.products.length)
           // 检查是否还有更多商品
           setHasMore(data.products.length < (data.total || 0))
         }
       } catch (err) {
         console.error('載入商品錯誤:', err)
       } finally {
-        setLoading(false)
+        if (isMounted) {
+          setLoading(false)
+        }
       }
     }
     
-    fetchProducts()
-  }, [])
+    // 确保在客户端执行
+    if (typeof window !== 'undefined') {
+      fetchProducts()
+    }
+    
+    return () => {
+      isMounted = false
+    }
+  }, [calculateItemsPerLoad]) // 依赖 calculateItemsPerLoad，但只在挂载时执行
 
   // 加载更多商品的函数
   const loadMoreProducts = useCallback(async () => {
-    if (loadingMore || !hasMore) return
+    if (loadingMore || !hasMore || itemsPerLoad === 0) return
 
     setLoadingMore(true)
     try {
       const currentOffset = offset
-      const response = await fetch(`/api/products?limit=6&offset=${currentOffset}`)
+      const limit = itemsPerLoad
+      const response = await fetch(`/api/products?limit=${limit}&offset=${currentOffset}`)
       const data = await response.json()
       
       if (data.success && data.products.length > 0) {
@@ -81,7 +136,7 @@ export default function Home() {
     } finally {
       setLoadingMore(false)
     }
-  }, [loadingMore, hasMore, offset, total])
+  }, [loadingMore, hasMore, offset, total, itemsPerLoad])
 
   // Intersection Observer 检测滚动到底部
   useEffect(() => {
@@ -140,7 +195,7 @@ export default function Home() {
         </p>
         <Link href="/products">
           <Button size="lg" className="text-lg px-8">
-            瀏覽所有商品
+            看看新商品
           </Button>
         </Link>
       </div>
