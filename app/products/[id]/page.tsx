@@ -256,10 +256,6 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
               <span className="text-sm text-muted-foreground">分類:</span>
               <span className="text-sm font-medium">{product.category || '未分類'}</span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-sm text-muted-foreground">商品編號:</span>
-              <span className="text-sm font-medium">{product.id}</span>
-            </div>
           </div>
         </div>
       </div>
