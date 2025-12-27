@@ -23,6 +23,8 @@ interface Variant {
   specifications: Record<string, string> // 規格組合，如 { "颜色": "红色", "尺寸": "M" }
   price: number // 變體價格
   sku?: string // SKU（可選）
+  image?: string // 變體主圖（可選）
+  images?: string[] // 變體圖片陣列（可選）
 }
 
 // 請求 Body 類型定義
@@ -127,6 +129,8 @@ export async function POST(request: NextRequest) {
           specifications: variant.specifications,
           price: variant.price,
           sku: variant.sku || null,
+          image: variant.image || null,
+          images: variant.images && Array.isArray(variant.images) ? variant.images : null,
         }))
       }
       
