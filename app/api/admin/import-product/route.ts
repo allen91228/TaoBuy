@@ -153,11 +153,11 @@ export async function POST(request: NextRequest) {
       images: body.images,
       category: body.category || null,
       price: new Prisma.Decimal(body.price), // 轉換為 Prisma Decimal
-      isActive: true, // 匯入的商品自動啟用並上架
+      isActive: true, // 匯入的商品自動啟用
       sourceUrl: body.sourceUrl,
       externalId: externalId,
       originalPrice: body.originalPrice ? new Prisma.Decimal(body.originalPrice) : null, // 轉換為 Prisma Decimal
-      importStatus: ImportStatus.PUBLISHED, // 匯入後直接發布
+      importStatus: ImportStatus.DRAFT, // 匯入後預設為草稿狀態，需要審核後才能發布
       metadata: metadata as any,
     }
 

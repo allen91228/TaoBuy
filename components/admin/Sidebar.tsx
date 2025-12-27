@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils"
 const navigation = [
   { name: "儀表板", href: "/admin", icon: LayoutDashboard },
   { name: "商品管理", href: "/admin/products", icon: Package },
+  { name: "審核商品", href: "/admin/products/review", icon: Package },
   { name: "訂單管理", href: "/admin/orders", icon: ShoppingBag },
   { name: "用戶管理", href: "/admin/users", icon: Users },
 ]
