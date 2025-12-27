@@ -129,12 +129,14 @@ export default function ReviewProductPage({ params }: { params: Promise<{ id: st
     setSaving(true)
 
     try {
-      // 更新 metadata 中的变体价格
+      // 更新 metadata 中的变体数据（包括规格和价格）
       const updatedMetadata = product?.metadata ? { ...product.metadata } : {}
       if (formData.variants.length > 0) {
         updatedMetadata.variants = formData.variants.map(v => ({
           ...v,
           price: typeof v.price === 'string' ? parseFloat(v.price) : v.price,
+          specifications: v.specifications || {},
+          sku: v.sku || null,
         }))
       }
 
@@ -320,37 +322,128 @@ export default function ReviewProductPage({ params }: { params: Promise<{ id: st
         <Card>
           <CardHeader>
             <CardTitle>商品變體</CardTitle>
-            <CardDescription>編輯每個變體的價格</CardDescription>
+            <CardDescription>編輯每個變體的規格和價格</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {formData.variants.map((variant, index) => (
-                <div key={variant.id} className="border rounded-lg p-4 space-y-3">
-                  <div>
-                    <label className="text-sm font-medium">變體規格</label>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      {getVariantDisplayName(variant)}
-                    </p>
-                    {variant.sku && (
-                      <p className="text-xs text-muted-foreground mt-1">SKU: {variant.sku}</p>
-                    )}
+            <div className="space-y-6">
+              {formData.variants.map((variant, variantIndex) => (
+                <div key={variant.id} className="border rounded-lg p-4 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-semibold">變體 {variantIndex + 1}</h3>
                   </div>
+                  
+                  {/* 規格編輯 */}
                   <div>
-                    <label className="text-sm font-medium">變體價格 (TWD) *</label>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      value={typeof variant.price === 'string' ? variant.price : variant.price.toString()}
-                      onChange={(e) => handleVariantPriceChange(index, e.target.value)}
-                      required
-                    />
-                    <p className="text-sm text-muted-foreground mt-1">
-                      NT$ {parseFloat(
-                        typeof variant.price === 'string' 
-                          ? variant.price 
-                          : variant.price.toString()
-                      ).toLocaleString()}
-                    </p>
+                    <label className="text-sm font-medium mb-2 block">規格</label>
+                    <div className="space-y-2">
+                      {Object.entries(variant.specifications || {}).map(([key, value], specIndex) => (
+                        <div key={specIndex} className="flex gap-2">
+                          <Input
+                            placeholder="規格名稱 (如: 顏色)"
+                            value={key}
+                            onChange={(e) => {
+                              const updatedVariants = [...formData.variants]
+                              const newSpecs = { ...updatedVariants[variantIndex].specifications }
+                              delete newSpecs[key]
+                              newSpecs[e.target.value] = value
+                              updatedVariants[variantIndex] = {
+                                ...updatedVariants[variantIndex],
+                                specifications: newSpecs,
+                              }
+                              setFormData({ ...formData, variants: updatedVariants })
+                            }}
+                            className="flex-1"
+                          />
+                          <Input
+                            placeholder="規格值 (如: 紅色)"
+                            value={value}
+                            onChange={(e) => {
+                              const updatedVariants = [...formData.variants]
+                              updatedVariants[variantIndex] = {
+                                ...updatedVariants[variantIndex],
+                                specifications: {
+                                  ...updatedVariants[variantIndex].specifications,
+                                  [key]: e.target.value,
+                                },
+                              }
+                              setFormData({ ...formData, variants: updatedVariants })
+                            }}
+                            className="flex-1"
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            onClick={() => {
+                              const updatedVariants = [...formData.variants]
+                              const newSpecs = { ...updatedVariants[variantIndex].specifications }
+                              delete newSpecs[key]
+                              updatedVariants[variantIndex] = {
+                                ...updatedVariants[variantIndex],
+                                specifications: newSpecs,
+                              }
+                              setFormData({ ...formData, variants: updatedVariants })
+                            }}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          const updatedVariants = [...formData.variants]
+                          updatedVariants[variantIndex] = {
+                            ...updatedVariants[variantIndex],
+                            specifications: {
+                              ...updatedVariants[variantIndex].specifications,
+                              [`新規格${Date.now()}`]: "",
+                            },
+                          }
+                          setFormData({ ...formData, variants: updatedVariants })
+                        }}
+                      >
+                        + 新增規格
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* 價格和SKU */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium">變體價格 (TWD) *</label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        value={typeof variant.price === 'string' ? variant.price : variant.price.toString()}
+                        onChange={(e) => handleVariantPriceChange(variantIndex, e.target.value)}
+                        required
+                      />
+                      <p className="text-sm text-muted-foreground mt-1">
+                        NT$ {parseFloat(
+                          typeof variant.price === 'string' 
+                            ? variant.price 
+                            : variant.price.toString()
+                        ).toLocaleString()}
+                      </p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium">SKU</label>
+                      <Input
+                        value={variant.sku || ""}
+                        onChange={(e) => {
+                          const updatedVariants = [...formData.variants]
+                          updatedVariants[variantIndex] = {
+                            ...updatedVariants[variantIndex],
+                            sku: e.target.value || null,
+                          }
+                          setFormData({ ...formData, variants: updatedVariants })
+                        }}
+                        placeholder="可選"
+                      />
+                    </div>
                   </div>
                 </div>
               ))}

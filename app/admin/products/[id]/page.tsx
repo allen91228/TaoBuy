@@ -6,8 +6,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { StatusBadge } from "@/components/admin/StatusBadge"
-import { ArrowLeft, Save, CheckCircle2, Loader2 } from "lucide-react"
+import { ArrowLeft, Save, CheckCircle2, Loader2, X } from "lucide-react"
 import Link from "next/link"
+
+interface Variant {
+  id: string
+  specifications: Record<string, string>
+  price: number | string
+  sku?: string | null
+  image?: string | null
+  images?: string[]
+}
 
 interface Product {
   id: string
@@ -46,6 +55,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
     externalId: "",
     importStatus: "DRAFT",
     isActive: true,
+    variants: [] as Variant[],
   })
   const initialDataRef = useRef<string>("")
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null)
@@ -72,6 +82,19 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
         if (data.success) {
           const p = data.data
           setProduct(p)
+          
+          // 解析变体数据
+          const variants: Variant[] = p.metadata?.variants 
+            ? p.metadata.variants.map((v: any) => ({
+                id: v.id || `variant-${Date.now()}-${Math.random()}`,
+                specifications: v.specifications || {},
+                price: typeof v.price === 'string' ? parseFloat(v.price) : v.price,
+                sku: v.sku || null,
+                image: v.image || null,
+                images: v.images && Array.isArray(v.images) ? v.images : undefined,
+              }))
+            : []
+          
           const initialFormData = {
             name: p.name || "",
             slug: p.slug || "",
@@ -85,6 +108,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
             externalId: p.externalId || "",
             importStatus: p.importStatus || "DRAFT",
             isActive: p.isActive !== undefined ? p.isActive : true,
+            variants: variants,
           }
           setFormData(initialFormData)
           initialDataRef.current = JSON.stringify(initialFormData)
@@ -141,6 +165,15 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
         .map((img) => img.trim())
         .filter((img) => img.length > 0)
 
+      // 更新 metadata 中的变体数据
+      const updatedMetadata = product?.metadata ? { ...product.metadata } : {}
+      if (formData.variants.length > 0) {
+        updatedMetadata.variants = formData.variants.map(v => ({
+          ...v,
+          price: typeof v.price === 'string' ? parseFloat(v.price) : v.price,
+        }))
+      }
+
       const response = await fetch(`/api/admin/products/${productId}`, {
         method: "PUT",
         headers: {
@@ -152,6 +185,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
           images: imagesArray,
           price: parseFloat(formData.price) || 0,
           originalPrice: formData.originalPrice ? parseFloat(formData.originalPrice) : null,
+          metadata: updatedMetadata,
         }),
       })
 
@@ -188,6 +222,15 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
         .map((img) => img.trim())
         .filter((img) => img.length > 0)
 
+      // 更新 metadata 中的变体数据
+      const updatedMetadata = product?.metadata ? { ...product.metadata } : {}
+      if (formData.variants.length > 0) {
+        updatedMetadata.variants = formData.variants.map(v => ({
+          ...v,
+          price: typeof v.price === 'string' ? parseFloat(v.price) : v.price,
+        }))
+      }
+
       const response = await fetch(`/api/admin/products/${productId}`, {
         method: "PUT",
         headers: {
@@ -199,6 +242,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
           images: imagesArray,
           price: parseFloat(formData.price) || 0,
           originalPrice: formData.originalPrice ? parseFloat(formData.originalPrice) : null,
+          metadata: updatedMetadata,
         }),
       })
 
@@ -456,6 +500,148 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
               </div>
             </CardContent>
           </Card>
+
+          {/* 變體管理 */}
+          {formData.variants.length > 0 && (
+            <Card className="md:col-span-2">
+              <CardHeader>
+                <CardTitle>商品變體</CardTitle>
+                <CardDescription>編輯每個變體的規格和價格</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-6">
+                  {formData.variants.map((variant, variantIndex) => (
+                    <div key={variant.id} className="border rounded-lg p-4 space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-lg font-semibold">變體 {variantIndex + 1}</h3>
+                      </div>
+                      
+                      {/* 規格編輯 */}
+                      <div>
+                        <label className="text-sm font-medium mb-2 block">規格</label>
+                        <div className="space-y-2">
+                          {Object.entries(variant.specifications || {}).map(([key, value], specIndex) => (
+                            <div key={specIndex} className="flex gap-2">
+                              <Input
+                                placeholder="規格名稱 (如: 顏色)"
+                                value={key}
+                                onChange={(e) => {
+                                  const updatedVariants = [...formData.variants]
+                                  const newSpecs = { ...updatedVariants[variantIndex].specifications }
+                                  delete newSpecs[key]
+                                  newSpecs[e.target.value] = value
+                                  updatedVariants[variantIndex] = {
+                                    ...updatedVariants[variantIndex],
+                                    specifications: newSpecs,
+                                  }
+                                  setFormData({ ...formData, variants: updatedVariants })
+                                }}
+                                className="flex-1"
+                              />
+                              <Input
+                                placeholder="規格值 (如: 紅色)"
+                                value={value}
+                                onChange={(e) => {
+                                  const updatedVariants = [...formData.variants]
+                                  updatedVariants[variantIndex] = {
+                                    ...updatedVariants[variantIndex],
+                                    specifications: {
+                                      ...updatedVariants[variantIndex].specifications,
+                                      [key]: e.target.value,
+                                    },
+                                  }
+                                  setFormData({ ...formData, variants: updatedVariants })
+                                }}
+                                className="flex-1"
+                              />
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="icon"
+                                onClick={() => {
+                                  const updatedVariants = [...formData.variants]
+                                  const newSpecs = { ...updatedVariants[variantIndex].specifications }
+                                  delete newSpecs[key]
+                                  updatedVariants[variantIndex] = {
+                                    ...updatedVariants[variantIndex],
+                                    specifications: newSpecs,
+                                  }
+                                  setFormData({ ...formData, variants: updatedVariants })
+                                }}
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          ))}
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              const updatedVariants = [...formData.variants]
+                              updatedVariants[variantIndex] = {
+                                ...updatedVariants[variantIndex],
+                                specifications: {
+                                  ...updatedVariants[variantIndex].specifications,
+                                  [`新規格${Date.now()}`]: "",
+                                },
+                              }
+                              setFormData({ ...formData, variants: updatedVariants })
+                            }}
+                          >
+                            + 新增規格
+                          </Button>
+                        </div>
+                      </div>
+
+                      {/* 價格和SKU */}
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-sm font-medium">變體價格 (TWD) *</label>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            value={typeof variant.price === 'string' ? variant.price : variant.price.toString()}
+                            onChange={(e) => {
+                              const updatedVariants = [...formData.variants]
+                              updatedVariants[variantIndex] = {
+                                ...updatedVariants[variantIndex],
+                                price: parseFloat(e.target.value) || 0,
+                              }
+                              setFormData({ ...formData, variants: updatedVariants })
+                            }}
+                            required
+                          />
+                          <p className="text-sm text-muted-foreground mt-1">
+                            NT$ {parseFloat(
+                              typeof variant.price === 'string' 
+                                ? variant.price 
+                                : variant.price.toString()
+                            ).toLocaleString()}
+                          </p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium">SKU</label>
+                          <Input
+                            value={variant.sku || ""}
+                            onChange={(e) => {
+                              const updatedVariants = [...formData.variants]
+                              updatedVariants[variantIndex] = {
+                                ...updatedVariants[variantIndex],
+                                sku: e.target.value || null,
+                              }
+                              setFormData({ ...formData, variants: updatedVariants })
+                            }}
+                            placeholder="可選"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
 
         <div className="mt-6 flex justify-end gap-4">
