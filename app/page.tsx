@@ -114,11 +114,9 @@ export default function Home() {
                   )}
                 </CardHeader>
                 <CardContent className="flex-1">
-                  <div className="flex items-center justify-between">
-                    <span className="text-2xl font-bold text-primary">
-                      NT$ {formatPrice(product.price).toLocaleString()}
-                    </span>
-                  </div>
+                  <span className="text-2xl font-bold text-primary">
+                    NT$ {formatPrice(product.price).toLocaleString()}
+                  </span>
                 </CardContent>
                 <CardFooter>
                   <Link href={`/products/${product.id}`} className="w-full">

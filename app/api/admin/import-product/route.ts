@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+/*  */import { prisma } from '@/lib/prisma'
 import { generateSlug, extractExternalIdFromUrl } from '@/lib/slug'
 import { generateProductId } from '@/lib/product-id'
 import { ImportStatus, Prisma } from '@prisma/client'

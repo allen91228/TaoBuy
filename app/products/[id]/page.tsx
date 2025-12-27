@@ -6,6 +6,7 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { useCartStore } from "@/store/cart-store"
 import { ShoppingCart, Plus, Minus } from "lucide-react"
+import ReactMarkdown from "react-markdown"
 
 interface ProductDetailPageProps {
   params: {
@@ -118,12 +119,12 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
         {/* 商品圖片區域 */}
         <div className="space-y-4">
           {/* 主圖 */}
-          <div className="relative aspect-square w-full overflow-hidden rounded-lg border">
+          <div className="relative aspect-square w-full overflow-hidden rounded-lg border bg-muted">
             <Image
               src={currentImage}
               alt={product.name}
               fill
-              className="object-cover"
+              className="object-contain"
               priority
               sizes="(max-width: 768px) 100vw, 50vw"
             />
@@ -136,7 +137,7 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
                 <button
                   key={index}
                   onClick={() => setSelectedImage(index)}
-                  className={`relative aspect-square w-full overflow-hidden rounded-lg border-2 transition-all ${
+                  className={`relative aspect-square w-full overflow-hidden rounded-lg border-2 transition-all bg-muted ${
                     currentImageIndex === index
                       ? "border-primary"
                       : "border-transparent hover:border-gray-300"
@@ -146,7 +147,7 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
                     src={image}
                     alt={`${product.name} ${index + 1}`}
                     fill
-                    className="object-cover"
+                    className="object-contain"
                     sizes="(max-width: 768px) 25vw, 12.5vw"
                     loading="lazy"
                   />
@@ -168,10 +169,35 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
           </div>
 
           {product.description && (
-            <div className="prose max-w-none">
-              <div className="text-lg text-muted-foreground whitespace-pre-wrap">
+            <div className="prose prose-sm max-w-none dark:prose-invert">
+              <ReactMarkdown
+                className="text-muted-foreground"
+                components={{
+                  h1: ({ ...props }) => <h1 className="text-2xl font-bold mt-6 mb-4" {...props} />,
+                  h2: ({ ...props }) => <h2 className="text-xl font-bold mt-5 mb-3" {...props} />,
+                  h3: ({ ...props }) => <h3 className="text-lg font-bold mt-4 mb-2" {...props} />,
+                  p: ({ ...props }) => <p className="mb-4 leading-relaxed" {...props} />,
+                  ul: ({ ...props }) => <ul className="list-disc list-inside mb-4 space-y-2" {...props} />,
+                  ol: ({ ...props }) => <ol className="list-decimal list-inside mb-4 space-y-2" {...props} />,
+                  li: ({ ...props }) => <li className="ml-4" {...props} />,
+                  strong: ({ ...props }) => <strong className="font-bold" {...props} />,
+                  em: ({ ...props }) => <em className="italic" {...props} />,
+                  code: ({ inline, ...props }: any) => 
+                    inline ? (
+                      <code className="bg-muted px-1.5 py-0.5 rounded text-sm font-mono" {...props} />
+                    ) : (
+                      <code className="block bg-muted p-4 rounded-lg text-sm font-mono overflow-x-auto mb-4" {...props} />
+                    ),
+                  a: ({ ...props }: any) => (
+                    <a className="text-primary hover:underline" target="_blank" rel="noopener noreferrer" {...props} />
+                  ),
+                  img: ({ ...props }: any) => (
+                    <img className="rounded-lg my-4 max-w-full" {...props} />
+                  ),
+                }}
+              >
                 {product.description}
-              </div>
+              </ReactMarkdown>
             </div>
           )}
 
