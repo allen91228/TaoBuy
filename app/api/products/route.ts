@@ -6,6 +6,9 @@ export const dynamic = 'force-dynamic'
 
 // 獲取商品列表 API
 export async function GET(request: NextRequest) {
+  // #region agent log
+  fetch('http://127.0.0.1:7242/ingest/aee0e817-0704-4436-8dbf-1c0e88679cb4',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app/api/products/route.ts:8',message:'API route GET handler called',data:{path:request.nextUrl.pathname,searchParams:Object.fromEntries(request.nextUrl.searchParams)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+  // #endregion
   try {
     const searchParams = request.nextUrl.searchParams
     const limit = parseInt(searchParams.get('limit') || '100')
