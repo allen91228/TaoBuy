@@ -43,6 +43,7 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
 
         if (data.success && data.product) {
           setProduct(data.product)
+          setSelectedImage(0) // 重置選中的圖片索引
         } else {
           setError('商品不存在')
         }
@@ -103,6 +104,17 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
     }
   }
 
+  // 合併所有圖片：優先使用 images 陣列，如果 images 為空但 image 有值，則包含 image
+  const allImages = product.images && product.images.length > 0 
+    ? product.images 
+    : product.image 
+      ? [product.image] 
+      : []
+
+  // 確保 selectedImage 不會超出範圍
+  const currentImageIndex = Math.min(selectedImage, allImages.length - 1)
+  const currentImage = allImages[currentImageIndex] || '/placeholder.jpg'
+
   return (
     <div className="container py-12">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12">
@@ -111,7 +123,7 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
           {/* 主圖 */}
           <div className="relative aspect-square w-full overflow-hidden rounded-lg border">
             <Image
-              src={product.images[selectedImage] || product.image || '/placeholder.jpg'}
+              src={currentImage}
               alt={product.name}
               fill
               className="object-cover"
@@ -120,15 +132,15 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
             />
           </div>
 
-          {/* 縮圖 */}
-          {product.images.length > 1 && (
+          {/* 縮圖 - 當有多張圖片時顯示 */}
+          {allImages.length > 1 && (
             <div className="grid grid-cols-4 gap-4">
-              {product.images.map((image, index) => (
+              {allImages.map((image, index) => (
                 <button
                   key={index}
                   onClick={() => setSelectedImage(index)}
                   className={`relative aspect-square w-full overflow-hidden rounded-lg border-2 transition-all ${
-                    selectedImage === index
+                    currentImageIndex === index
                       ? "border-primary"
                       : "border-transparent hover:border-gray-300"
                   }`}
@@ -139,6 +151,7 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
                     fill
                     className="object-cover"
                     sizes="(max-width: 768px) 25vw, 12.5vw"
+                    loading="lazy"
                   />
                 </button>
               ))}
