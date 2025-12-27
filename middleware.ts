@@ -9,9 +9,10 @@ const isPublicRoute = createRouteMatcher([
   '/api/webhooks(.*)',
 ])
 
-export default clerkMiddleware(async (auth, req) => {
+export default clerkMiddleware((auth, req) => {
   if (!isPublicRoute(req)) {
-    await auth.protect()
+    // 修正：auth 是一個函式，必須加括號 () 呼叫
+    auth().protect()
   }
 })
 
