@@ -63,9 +63,22 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
           setProduct(data.product)
           setSelectedImage(0) // 重置選中的圖片索引
           
-          // 初始化價格
-          const initialPrice = formatPrice(data.product.price)
-          setCurrentPrice(initialPrice)
+          // 初始化價格：如果有變體，顯示最便宜的價格
+          const variants = data.product.metadata?.variants
+          if (variants && Array.isArray(variants) && variants.length > 0) {
+            const cheapestVariant = variants.reduce((min: any, variant: any) => {
+              const variantPrice = typeof variant.price === 'string' ? parseFloat(variant.price) : variant.price
+              const minPrice = typeof min.price === 'string' ? parseFloat(min.price) : min.price
+              return variantPrice < minPrice ? variant : min
+            })
+            const cheapestPrice = typeof cheapestVariant.price === 'string' 
+              ? parseFloat(cheapestVariant.price) 
+              : cheapestVariant.price
+            setCurrentPrice(cheapestPrice)
+          } else {
+            const initialPrice = formatPrice(data.product.price)
+            setCurrentPrice(initialPrice)
+          }
         } else {
           setError('商品不存在')
         }
@@ -127,14 +140,30 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
         setCurrentVariant(matchedVariant)
         setCurrentPrice(matchedVariant.price)
       } else {
-        // 沒有匹配的變體，使用基礎價格
+        // 沒有匹配的變體，使用最便宜的變體價格
+        if (variants.length > 0) {
+          const cheapestVariant = variants.reduce((min, variant) => 
+            variant.price < min.price ? variant : min
+          )
+          setCurrentVariant(null)
+          setCurrentPrice(cheapestVariant.price)
+        } else {
+          setCurrentVariant(null)
+          setCurrentPrice(formatPrice(product.price))
+        }
+      }
+    } else {
+      // 規格未完全選擇，顯示最便宜的變體價格
+      if (variants.length > 0) {
+        const cheapestVariant = variants.reduce((min, variant) => 
+          variant.price < min.price ? variant : min
+        )
+        setCurrentVariant(null)
+        setCurrentPrice(cheapestVariant.price)
+      } else {
         setCurrentVariant(null)
         setCurrentPrice(formatPrice(product.price))
       }
-    } else {
-      // 規格未完全選擇，使用基礎價格
-      setCurrentVariant(null)
-      setCurrentPrice(formatPrice(product.price))
     }
   }, [selectedSpecifications, product])
 
