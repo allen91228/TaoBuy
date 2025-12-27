@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { StatusBadge } from "@/components/admin/StatusBadge"
-import { ArrowLeft, Save, X, CheckCircle, ArrowRight } from "lucide-react"
+import { ArrowLeft, Save, X, CheckCircle, ArrowRight, Trash2 } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 
@@ -264,6 +264,13 @@ export default function ReviewProductPage({ params }: { params: Promise<{ id: st
     await handleSave(true)
   }
 
+  const handleDeleteVariant = (variantIndex: number) => {
+    if (confirm('確定要刪除此變體嗎？')) {
+      const updatedVariants = formData.variants.filter((_, index) => index !== variantIndex)
+      setFormData({ ...formData, variants: updatedVariants })
+    }
+  }
+
   if (loading) {
     return <div className="text-center py-8">載入中...</div>
   }
@@ -403,6 +410,14 @@ export default function ReviewProductPage({ params }: { params: Promise<{ id: st
                 <div key={variant.id} className="border rounded-lg p-4 space-y-4">
                   <div className="flex items-center justify-between">
                     <h3 className="text-lg font-semibold">變體 {variantIndex + 1}</h3>
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="icon"
+                      onClick={() => handleDeleteVariant(variantIndex)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                   </div>
                   
                   {/* 規格編輯 */}

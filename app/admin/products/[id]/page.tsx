@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { StatusBadge } from "@/components/admin/StatusBadge"
-import { ArrowLeft, Save, CheckCircle2, Loader2, X } from "lucide-react"
+import { ArrowLeft, Save, CheckCircle2, Loader2, X, Trash2 } from "lucide-react"
 import Link from "next/link"
 
 interface Variant {
@@ -424,6 +424,13 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
     }
   }
 
+  const handleDeleteVariant = (variantIndex: number) => {
+    if (confirm('確定要刪除此變體嗎？')) {
+      const updatedVariants = formData.variants.filter((_, index) => index !== variantIndex)
+      setFormData({ ...formData, variants: updatedVariants })
+    }
+  }
+
   if (loading) {
     return <div className="text-center py-8">載入中...</div>
   }
@@ -636,6 +643,14 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
                     <div key={variant.id} className="border rounded-lg p-4 space-y-4">
                       <div className="flex items-center justify-between">
                         <h3 className="text-lg font-semibold">變體 {variantIndex + 1}</h3>
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="icon"
+                          onClick={() => handleDeleteVariant(variantIndex)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
                       
                       {/* 規格編輯 */}
