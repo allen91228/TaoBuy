@@ -284,9 +284,9 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
     }
   }
 
-  // 合併所有圖片：如果有選中的變體且變體有圖片，優先使用變體圖片，否則使用商品默認圖片
+  // 合併所有圖片：優先使用商品默認圖片，只有當買家選擇變體且變體有圖片時，才切換到變體圖片
   const getDisplayImages = (): string[] => {
-    // 如果有選中的變體且變體有圖片
+    // 如果有選中的變體且變體有圖片，使用變體圖片
     if (currentVariant) {
       if (currentVariant.images && currentVariant.images.length > 0) {
         return currentVariant.images
@@ -296,10 +296,11 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
       }
     }
     
-    // 使用商品默認圖片
+    // 優先使用商品 images 陣列
     if (product.images && product.images.length > 0) {
       return product.images
     }
+    // 如果沒有 images 陣列，使用 image 主圖
     if (product.image) {
       return [product.image]
     }
