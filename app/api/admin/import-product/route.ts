@@ -136,7 +136,12 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    // 9. 返回成功回應
+    // 9. 返回成功回應（包含商品連結）
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 
+                   (request.headers.get('origin') || 
+                    request.nextUrl.origin)
+    const productUrl = `${baseUrl}/products/${product.slug}`
+    
     return NextResponse.json(
       {
         success: true,
@@ -147,6 +152,7 @@ export async function POST(request: NextRequest) {
           slug: product.slug,
           externalId: product.externalId,
           importStatus: product.importStatus,
+          url: productUrl, // 商品連結
         },
       },
       { status: 200, headers: corsHeaders }
