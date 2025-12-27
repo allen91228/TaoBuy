@@ -10,6 +10,13 @@ export const dynamic = 'force-dynamic'
 // API Secret（從環境變數讀取，如果沒有則使用預設值）
 const API_SECRET = process.env.API_SECRET || 'sermon-museum-struggle-denim-bankable-strongly'
 
+// CORS headers
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, x-api-secret',
+}
+
 // 請求 Body 類型定義
 interface ImportProductRequest {
   sourceUrl: string // 淘寶網址
@@ -23,6 +30,14 @@ interface ImportProductRequest {
   externalId?: string // 外部 ID（可選，如果不提供則從 URL 提取）
 }
 
+// 處理 CORS 預檢請求
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 200,
+    headers: corsHeaders,
+  })
+}
+
 export async function POST(request: NextRequest) {
   try {
     // 1. 安全性檢查：檢查 API Secret
@@ -31,7 +46,7 @@ export async function POST(request: NextRequest) {
     if (!apiSecret || apiSecret !== API_SECRET) {
       return NextResponse.json(
         { error: '未授權：API Secret 不正確' },
-        { status: 401 }
+        { status: 401, headers: corsHeaders }
       )
     }
 
@@ -41,7 +56,7 @@ export async function POST(request: NextRequest) {
     if (!userId) {
       return NextResponse.json(
         { error: '未授權：請先登入' },
-        { status: 401 }
+        { status: 401, headers: corsHeaders }
       )
     }
 
@@ -54,7 +69,7 @@ export async function POST(request: NextRequest) {
     if (!user || user.role !== 'ADMIN') {
       return NextResponse.json(
         { error: '禁止訪問：需要管理員權限' },
-        { status: 403 }
+        { status: 403, headers: corsHeaders }
       )
     }
 
@@ -65,14 +80,14 @@ export async function POST(request: NextRequest) {
     if (!body.sourceUrl || !body.title || !body.images || body.images.length === 0) {
       return NextResponse.json(
         { error: '缺少必要欄位：sourceUrl, title, images 為必填' },
-        { status: 400 }
+        { status: 400, headers: corsHeaders }
       )
     }
 
     if (typeof body.originalPrice !== 'number' || typeof body.price !== 'number') {
       return NextResponse.json(
         { error: '價格必須為數字' },
-        { status: 400 }
+        { status: 400, headers: corsHeaders }
       )
     }
 
@@ -158,7 +173,7 @@ export async function POST(request: NextRequest) {
           importStatus: product.importStatus,
         },
       },
-      { status: 200 }
+      { status: 200, headers: corsHeaders }
     )
 
   } catch (error) {
@@ -170,14 +185,14 @@ export async function POST(request: NextRequest) {
       if (error.message.includes('Unique constraint')) {
         return NextResponse.json(
           { error: '商品已存在或 slug 重複' },
-          { status: 409 }
+          { status: 409, headers: corsHeaders }
         )
       }
     }
 
     return NextResponse.json(
       { error: '伺服器錯誤：無法匯入商品' },
-      { status: 500 }
+      { status: 500, headers: corsHeaders }
     )
   }
 }
