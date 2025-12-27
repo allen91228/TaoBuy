@@ -110,11 +110,11 @@ export async function POST(request: NextRequest) {
       category: body.category || null,
       stock: 0, // 預設庫存為 0
       price: body.price,
-      isActive: true,
+      isActive: true, // 匯入的商品自動啟用並上架
       sourceUrl: body.sourceUrl,
       externalId: externalId,
       originalPrice: body.originalPrice,
-      importStatus: ImportStatus.DRAFT, // 預設為草稿狀態
+      importStatus: ImportStatus.PUBLISHED, // 匯入後直接發布
       metadata: body.specifications ? (typeof body.specifications === 'object' ? body.specifications : null) : null,
     }
 
