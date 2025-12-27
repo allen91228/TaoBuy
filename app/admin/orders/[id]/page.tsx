@@ -249,7 +249,11 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                   />
                 </div>
                 <div className="flex-1">
-                  <h3 className="font-medium">{item.product.name}</h3>
+                  <Link href={`/admin/products/${item.product.id}`}>
+                    <h3 className="font-medium hover:text-primary transition-colors cursor-pointer">
+                      {item.product.name}
+                    </h3>
+                  </Link>
                   {item.specifications && (
                     <div className="text-sm text-muted-foreground mt-1">
                       {Object.entries(item.specifications).map(([key, value]) => (

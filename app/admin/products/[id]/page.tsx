@@ -1,12 +1,12 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { StatusBadge } from "@/components/admin/StatusBadge"
-import { ArrowLeft, Save } from "lucide-react"
+import { ArrowLeft, Save, CheckCircle2, Loader2 } from "lucide-react"
 import Link from "next/link"
 
 interface Product {
@@ -30,6 +30,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
   const router = useRouter()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
   const [product, setProduct] = useState<Product | null>(null)
   const [productId, setProductId] = useState<string>("")
   const [formData, setFormData] = useState({
@@ -46,6 +47,9 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
     importStatus: "DRAFT",
     isActive: true,
   })
+  const initialDataRef = useRef<string>("")
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const isInitialLoadRef = useRef(true)
 
   useEffect(() => {
     const initParams = async () => {
@@ -68,7 +72,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
         if (data.success) {
           const p = data.data
           setProduct(p)
-          setFormData({
+          const initialFormData = {
             name: p.name || "",
             slug: p.slug || "",
             description: p.description || "",
@@ -81,7 +85,10 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
             externalId: p.externalId || "",
             importStatus: p.importStatus || "DRAFT",
             isActive: p.isActive !== undefined ? p.isActive : true,
-          })
+          }
+          setFormData(initialFormData)
+          initialDataRef.current = JSON.stringify(initialFormData)
+          isInitialLoadRef.current = false
         }
       } catch (error) {
         console.error("獲取商品錯誤:", error)
@@ -92,6 +99,130 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
 
     fetchProduct()
   }, [productId])
+
+  // 自动保存功能
+  useEffect(() => {
+    // 如果还在加载或没有 productId，不执行
+    if (loading || !productId || isInitialLoadRef.current) return
+
+    // 检查数据是否有变化
+    const currentData = JSON.stringify(formData)
+    if (currentData === initialDataRef.current) {
+      return // 数据没有变化，不需要保存
+    }
+
+    // 清除之前的定时器
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current)
+    }
+
+    // 设置新的定时器，1.5秒后自动保存
+    saveTimeoutRef.current = setTimeout(async () => {
+      await autoSave()
+    }, 1500)
+
+    // 清理函数
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current)
+      }
+    }
+  }, [formData, productId, loading])
+
+  const autoSave = async () => {
+    if (!productId || saving) return
+
+    setSaving(true)
+    setSaveStatus('saving')
+
+    try {
+      const imagesArray = formData.images
+        .split("\n")
+        .map((img) => img.trim())
+        .filter((img) => img.length > 0)
+
+      const response = await fetch(`/api/admin/products/${productId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          ...formData,
+          images: imagesArray,
+          price: parseFloat(formData.price) || 0,
+          originalPrice: formData.originalPrice ? parseFloat(formData.originalPrice) : null,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        setSaveStatus('saved')
+        initialDataRef.current = JSON.stringify(formData)
+        // 3秒后隐藏"已保存"提示
+        setTimeout(() => {
+          setSaveStatus('idle')
+        }, 3000)
+      } else {
+        setSaveStatus('error')
+        console.error("自動儲存失敗:", data.error)
+      }
+    } catch (error) {
+      console.error("自動儲存錯誤:", error)
+      setSaveStatus('error')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleManualSave = async () => {
+    if (!productId || saving) return
+
+    setSaving(true)
+    setSaveStatus('saving')
+
+    try {
+      const imagesArray = formData.images
+        .split("\n")
+        .map((img) => img.trim())
+        .filter((img) => img.length > 0)
+
+      const response = await fetch(`/api/admin/products/${productId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          ...formData,
+          images: imagesArray,
+          price: parseFloat(formData.price) || 0,
+          originalPrice: formData.originalPrice ? parseFloat(formData.originalPrice) : null,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        setSaveStatus('saved')
+        initialDataRef.current = JSON.stringify(formData)
+        // 3秒后隐藏"已保存"提示
+        setTimeout(() => {
+          setSaveStatus('idle')
+        }, 3000)
+      } else {
+        setSaveStatus('error')
+        alert(data.error || "儲存失敗")
+      }
+    } catch (error) {
+      console.error("手動儲存錯誤:", error)
+      setSaveStatus('error')
+      alert("儲存失敗")
+    } finally {
+      setSaving(false)
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -122,6 +253,8 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
       const data = await response.json()
 
       if (data.success) {
+        // 手动保存成功后，更新初始数据引用
+        initialDataRef.current = JSON.stringify(formData)
         router.push("/admin/products")
       } else {
         alert(data.error || "更新失敗")
@@ -149,12 +282,32 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
           <h1 className="text-3xl font-bold">編輯商品</h1>
           <p className="text-muted-foreground">編輯商品資訊</p>
         </div>
-        <Link href="/admin/products">
-          <Button variant="outline">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            返回列表
-          </Button>
-        </Link>
+        <div className="flex items-center gap-4">
+          {/* 保存状态提示 */}
+          {saveStatus === 'saving' && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span>自動儲存中...</span>
+            </div>
+          )}
+          {saveStatus === 'saved' && (
+            <div className="flex items-center gap-2 text-sm text-green-600">
+              <CheckCircle2 className="h-4 w-4" />
+              <span>已自動儲存</span>
+            </div>
+          )}
+          {saveStatus === 'error' && (
+            <div className="flex items-center gap-2 text-sm text-red-600">
+              <span>儲存失敗，請手動儲存</span>
+            </div>
+          )}
+          <Link href="/admin/products">
+            <Button variant="outline">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              返回列表
+            </Button>
+          </Link>
+        </div>
       </div>
 
       <form onSubmit={handleSubmit}>
@@ -309,9 +462,18 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
           <Link href="/admin/products">
             <Button type="button" variant="outline">取消</Button>
           </Link>
+          <Button 
+            type="button" 
+            variant="outline"
+            onClick={handleManualSave}
+            disabled={saving}
+          >
+            <Save className="mr-2 h-4 w-4" />
+            {saving ? "儲存中..." : "手動儲存"}
+          </Button>
           <Button type="submit" disabled={saving}>
             <Save className="mr-2 h-4 w-4" />
-            {saving ? "儲存中..." : "儲存"}
+            {saving ? "儲存中..." : "儲存並返回"}
           </Button>
         </div>
       </form>
