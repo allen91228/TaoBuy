@@ -28,6 +28,15 @@ export async function GET(
       )
     }
 
+    // 调试日志：检查 metadata 结构
+    console.log('[API] Product metadata:', product.metadata)
+    console.log('[API] Metadata type:', typeof product.metadata)
+    if (product.metadata && typeof product.metadata === 'object') {
+      console.log('[API] Metadata keys:', Object.keys(product.metadata))
+      console.log('[API] Has variants?', 'variants' in product.metadata)
+      console.log('[API] Variants:', (product.metadata as any)?.variants)
+    }
+
     return NextResponse.json({
       success: true,
       data: product,

@@ -101,6 +101,12 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
             }
           }
           
+          // 详细检查 metadata 对象的所有键
+          if (metadataObj && typeof metadataObj === 'object') {
+            console.log('[EDIT] Metadata keys:', Object.keys(metadataObj))
+            console.log('[EDIT] Full metadata object:', JSON.stringify(metadataObj, null, 2))
+          }
+          
           console.log('[EDIT] Variants from metadata:', metadataObj?.variants)
           console.log('[EDIT] Variants type:', typeof metadataObj?.variants)
           console.log('[EDIT] Variants is array?', Array.isArray(metadataObj?.variants))

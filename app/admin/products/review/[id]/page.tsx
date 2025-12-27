@@ -90,6 +90,12 @@ export default function ReviewProductPage({ params }: { params: Promise<{ id: st
             }
           }
           
+          // 详细检查 metadata 对象的所有键
+          if (metadataObj && typeof metadataObj === 'object') {
+            console.log('[REVIEW] Metadata keys:', Object.keys(metadataObj))
+            console.log('[REVIEW] Full metadata object:', JSON.stringify(metadataObj, null, 2))
+          }
+          
           console.log('[REVIEW] Variants from metadata:', metadataObj?.variants)
           console.log('[REVIEW] Variants type:', typeof metadataObj?.variants)
           console.log('[REVIEW] Variants is array?', Array.isArray(metadataObj?.variants))
