@@ -25,6 +25,10 @@ export async function POST(request: NextRequest) {
 
     // 設置 cookie
     await setApiSecretCookie(secret)
+    
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/aee0e817-0704-4436-8dbf-1c0e88679cb4',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app/api/admin/auth/login/route.ts:28',message:'Cookie set successfully',data:{secretLength:secret.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{})
+    // #endregion
 
     return NextResponse.json({
       success: true,

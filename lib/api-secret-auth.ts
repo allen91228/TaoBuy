@@ -41,7 +41,11 @@ export function checkApiSecretAuth(request: NextRequest): boolean {
  */
 export async function getApiSecretFromCookie(): Promise<string | null> {
   const cookieStore = await cookies()
-  return cookieStore.get(ADMIN_SECRET_COOKIE)?.value || null
+  const secret = cookieStore.get(ADMIN_SECRET_COOKIE)?.value || null
+  // #region agent log
+  fetch('http://127.0.0.1:7242/ingest/aee0e817-0704-4436-8dbf-1c0e88679cb4',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'lib/api-secret-auth.ts:45',message:'Reading cookie',data:{hasSecret:!!secret,secretLength:secret?.length||0},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{})
+  // #endregion
+  return secret
 }
 
 /**
@@ -49,7 +53,11 @@ export async function getApiSecretFromCookie(): Promise<string | null> {
  */
 export async function isAdminAuthenticated(): Promise<boolean> {
   const secret = await getApiSecretFromCookie()
-  return verifyApiSecret(secret)
+  const isValid = verifyApiSecret(secret)
+  // #region agent log
+  fetch('http://127.0.0.1:7242/ingest/aee0e817-0704-4436-8dbf-1c0e88679cb4',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'lib/api-secret-auth.ts:54',message:'Auth verification',data:{hasSecret:!!secret,isValid,expectedSecret:API_SECRET.substring(0,10)+'...'},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{})
+  // #endregion
+  return isValid
 }
 
 /**
