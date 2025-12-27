@@ -95,6 +95,18 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
     fetchProduct()
   }, [params.id])
 
+  // 設置頁面標題為商品名稱
+  useEffect(() => {
+    if (product?.name) {
+      document.title = product.name
+    }
+    // 清理函數：當組件卸載或商品變化時，可以選擇恢復默認標題
+    return () => {
+      // 可選：恢復默認標題
+      // document.title = '商品詳情'
+    }
+  }, [product?.name])
+
   // 解析變體數據
   const getVariants = (): Variant[] => {
     if (!product?.metadata?.variants) return []
