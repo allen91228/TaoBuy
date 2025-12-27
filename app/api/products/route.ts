@@ -59,7 +59,6 @@ export async function GET(request: NextRequest) {
         image: true,
         images: true,
         category: true,
-        stock: true,
         price: true,
         createdAt: true,
         updatedAt: true,

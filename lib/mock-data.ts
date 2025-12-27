@@ -9,7 +9,6 @@ export interface Product {
   image: string
   images: string[]
   category: string
-  stock: number
 }
 
 export const mockProducts: Product[] = [
@@ -25,7 +24,6 @@ export const mockProducts: Product[] = [
       "https://images.unsplash.com/photo-1484704849700-f032a568e944?w=500",
     ],
     category: "電子產品",
-    stock: 50,
   },
   {
     id: "2",
@@ -39,7 +37,6 @@ export const mockProducts: Product[] = [
       "https://images.unsplash.com/photo-1434493789847-2f02dc6ca35d?w=500",
     ],
     category: "電子產品",
-    stock: 30,
   },
   {
     id: "3",
@@ -53,7 +50,6 @@ export const mockProducts: Product[] = [
       "https://images.unsplash.com/photo-1581605405669-fcdf81165afa?w=500",
     ],
     category: "服飾配件",
-    stock: 80,
   },
   {
     id: "4",
@@ -67,7 +63,6 @@ export const mockProducts: Product[] = [
       "https://images.unsplash.com/photo-1497935586351-b67a49e012bf?w=500",
     ],
     category: "家電",
-    stock: 15,
   },
   {
     id: "5",
@@ -81,7 +76,6 @@ export const mockProducts: Product[] = [
       "https://images.unsplash.com/photo-1460353581641-37baddab0fa2?w=500",
     ],
     category: "服飾配件",
-    stock: 60,
   },
   {
     id: "6",
@@ -95,7 +89,6 @@ export const mockProducts: Product[] = [
       "https://images.unsplash.com/photo-1525547719571-a2d4ac8945e2?w=500",
     ],
     category: "電子產品",
-    stock: 25,
   },
   {
     id: "7",
@@ -109,7 +102,6 @@ export const mockProducts: Product[] = [
       "https://images.unsplash.com/photo-1608043152269-423dbba4e7e1?w=500",
     ],
     category: "電子產品",
-    stock: 40,
   },
   {
     id: "8",
@@ -123,7 +115,6 @@ export const mockProducts: Product[] = [
       "https://images.unsplash.com/photo-1576566588028-4147f3842f27?w=500",
     ],
     category: "服飾配件",
-    stock: 100,
   },
 ]
 

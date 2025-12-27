@@ -60,7 +60,6 @@ model Product {
   image         String?     // 主圖
   images        String[]    // 多張圖片 URL
   category      String?
-  stock         Int         @default(0) // 庫存數量
   price         Decimal     @db.Decimal(10, 2) // 本地售價 (TWD)
   isActive      Boolean     @default(true)
   

@@ -22,7 +22,6 @@ interface Variant {
   id?: string // 可選，如果不提供則自動生成
   specifications: Record<string, string> // 規格組合，如 { "颜色": "红色", "尺寸": "M" }
   price: number // 變體價格
-  stock?: number // 變體庫存（可選）
   sku?: string // SKU（可選）
 }
 
@@ -127,7 +126,6 @@ export async function POST(request: NextRequest) {
           id: variant.id || `variant-${Date.now()}-${index}`,
           specifications: variant.specifications,
           price: variant.price,
-          stock: variant.stock ?? null,
           sku: variant.sku || null,
         }))
       }
@@ -150,7 +148,6 @@ export async function POST(request: NextRequest) {
       image: body.images[0] || null,
       images: body.images,
       category: body.category || null,
-      stock: 0, // 預設庫存為 0
       price: new Prisma.Decimal(body.price), // 轉換為 Prisma Decimal
       isActive: true, // 匯入的商品自動啟用並上架
       sourceUrl: body.sourceUrl,

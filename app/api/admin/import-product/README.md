@@ -121,7 +121,6 @@ Authorization: Bearer <Clerk Session Token>
    - 如果不存在，則建立新商品
 7. **預設值**：
    - `importStatus`: `DRAFT`（草稿狀態）
-   - `stock`: 0
    - `isActive`: true
 
 ## 範例請求

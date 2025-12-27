@@ -18,7 +18,6 @@ interface Variant {
   id: string
   specifications: Record<string, string>
   price: number
-  stock?: number | null
   sku?: string | null
 }
 
@@ -93,7 +92,6 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
       id: v.id,
       specifications: v.specifications,
       price: typeof v.price === 'string' ? parseFloat(v.price) : v.price,
-      stock: v.stock ?? null,
       sku: v.sku ?? null,
     }))
   }
@@ -330,13 +328,6 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
                     </div>
                   </div>
                 ))}
-                
-                {/* 顯示當前變體的庫存信息 */}
-                {currentVariant && currentVariant.stock !== null && (
-                  <div className="text-sm text-muted-foreground">
-                    庫存: {currentVariant.stock > 0 ? `${currentVariant.stock} 件` : '缺貨'}
-                  </div>
-                )}
               </div>
             )
           })()}
@@ -414,10 +405,7 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
                   const allSpecsSelected = Object.keys(specOptions).every(
                     (key) => selectedSpecifications[key]
                   )
-                  if (!allSpecsSelected) return false
-                  
-                  // 如果有變體但沒有庫存，禁用按鈕
-                  return currentVariant !== null && (currentVariant.stock === null || currentVariant.stock === 0)
+                  return !allSpecsSelected
                 })()
               }
             >
@@ -430,9 +418,6 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
                   : true
                 
                 if (!allSpecsSelected) return '請選擇規格'
-                if (currentVariant && (currentVariant.stock === null || currentVariant.stock === 0)) {
-                  return '已售完'
-                }
                 return '加入購物車'
               })()}
             </Button>

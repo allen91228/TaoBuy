@@ -27,7 +27,6 @@ export async function GET(
         image: true,
         images: true,
         category: true,
-        stock: true,
         price: true,
         metadata: true, // 包含規格和變體數據
         createdAt: true,
