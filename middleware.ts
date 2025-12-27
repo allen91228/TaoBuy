@@ -9,7 +9,7 @@ const isPublicRoute = createRouteMatcher([
   '/sign-in(.*)',
   '/sign-up(.*)',
   '/api/webhooks(.*)',
-  '/api/admin/import-product', // 👈 加入這一行，這是關鍵！
+  "/api/admin/import-product(.*)", // 👈 加入這一行，這是關鍵！
 ])
 
 export default clerkMiddleware((auth, req) => {
