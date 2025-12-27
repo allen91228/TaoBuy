@@ -14,7 +14,6 @@ interface Product {
   image: string | null
   images: string[]
   category: string | null
-  stock: number
   price: number | string
   createdAt: string
   updatedAt: string
@@ -118,9 +117,6 @@ export default function Home() {
                   <div className="flex items-center justify-between">
                     <span className="text-2xl font-bold text-primary">
                       NT$ {formatPrice(product.price).toLocaleString()}
-                    </span>
-                    <span className="text-sm text-muted-foreground">
-                      庫存: {product.stock}
                     </span>
                   </div>
                 </CardContent>

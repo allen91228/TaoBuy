@@ -15,7 +15,6 @@ interface Product {
   image: string | null
   images: string[]
   category: string | null
-  stock: number
   price: number | string // Prisma Decimal 在 JSON 中可能是字串
   createdAt: string
   updatedAt: string
@@ -25,6 +24,7 @@ function ProductsContent() {
   const searchParams = useSearchParams()
   const searchQuery = searchParams.get('search') || ''
   const [products, setProducts] = useState<Product[]>([])
+  const [total, setTotal] = useState<number>(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -39,6 +39,7 @@ function ProductsContent() {
         
         if (data.success) {
           setProducts(data.products)
+          setTotal(data.total || 0)
         } else {
           setError('無法載入商品列表')
         }
@@ -87,7 +88,9 @@ function ProductsContent() {
           {searchQuery ? `搜尋結果: "${searchQuery}"` : '商品列表'}
         </h1>
         <p className="text-muted-foreground">
-          {searchQuery ? `找到 ${products.length} 個商品` : '瀏覽我們精選的商品'}
+          {searchQuery 
+            ? `找到 ${products.length} 個商品` 
+            : `我們有 ${total} 種商品`}
         </p>
       </div>
 
@@ -128,9 +131,6 @@ function ProductsContent() {
                 <div className="flex items-center justify-between">
                   <span className="text-2xl font-bold text-primary">
                     NT$ {formatPrice(product.price).toLocaleString()}
-                  </span>
-                  <span className="text-sm text-muted-foreground">
-                    庫存: {product.stock}
                   </span>
                 </div>
               </CardContent>

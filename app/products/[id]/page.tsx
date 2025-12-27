@@ -21,7 +21,6 @@ interface Product {
   image: string | null
   images: string[]
   category: string | null
-  stock: number
   price: number | string
   createdAt: string
   updatedAt: string
@@ -93,9 +92,7 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
   }
 
   const handleIncreaseQuantity = () => {
-    if (quantity < product.stock) {
-      setQuantity(quantity + 1)
-    }
+    setQuantity(quantity + 1)
   }
 
   const handleDecreaseQuantity = () => {
@@ -167,15 +164,16 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
               <span className="text-3xl font-bold text-primary">
                 NT$ {formatPrice(product.price).toLocaleString()}
               </span>
-              <span className="text-sm text-muted-foreground">
-                庫存: {product.stock} 件
-              </span>
             </div>
           </div>
 
-          <div className="prose max-w-none">
-            <p className="text-lg text-muted-foreground">{product.description}</p>
-          </div>
+          {product.description && (
+            <div className="prose max-w-none">
+              <div className="text-lg text-muted-foreground whitespace-pre-wrap">
+                {product.description}
+              </div>
+            </div>
+          )}
 
           <div className="space-y-4 pt-4 border-t">
             {/* 數量選擇 */}
@@ -196,7 +194,6 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
                   variant="ghost"
                   size="icon"
                   onClick={handleIncreaseQuantity}
-                  disabled={quantity >= product.stock}
                   className="h-10 w-10"
                 >
                   <Plus className="h-4 w-4" />
@@ -207,19 +204,12 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
             {/* 加入購物車按鈕 */}
             <Button
               onClick={handleAddToCart}
-              disabled={product.stock === 0}
               className="w-full h-12 text-lg"
               size="lg"
             >
               <ShoppingCart className="mr-2 h-5 w-5" />
-              {product.stock > 0 ? "加入購物車" : "已售完"}
+              加入購物車
             </Button>
-
-            {product.stock === 0 && (
-              <p className="text-sm text-destructive text-center">
-                此商品目前缺貨
-              </p>
-            )}
           </div>
 
           {/* 商品詳情 */}
