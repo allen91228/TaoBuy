@@ -95,12 +95,7 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
     fetchProduct()
   }, [params.id])
 
-  // 解析規格數據
-  const getSpecificationOptions = (): Record<string, string[]> => {
-    if (!product?.metadata?.specificationOptions) return {}
-    return product.metadata.specificationOptions
-  }
-
+  // 解析變體數據
   const getVariants = (): Variant[] => {
     if (!product?.metadata?.variants) return []
     return product.metadata.variants.map((v: any) => ({
@@ -111,6 +106,38 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
       image: v.image ?? null,
       images: v.images && Array.isArray(v.images) ? v.images : undefined,
     }))
+  }
+
+  // 解析規格數據 - 从变体中自动生成规格选项
+  const getSpecificationOptions = (): Record<string, string[]> => {
+    const variants = getVariants()
+    
+    // 如果数据库中有 specificationOptions，优先使用
+    if (product?.metadata?.specificationOptions) {
+      return product.metadata.specificationOptions
+    }
+    
+    // 否则从变体中自动生成
+    if (variants.length === 0) return {}
+    
+    const specOptions: Record<string, Set<string>> = {}
+    
+    variants.forEach((variant) => {
+      Object.entries(variant.specifications || {}).forEach(([key, value]) => {
+        if (!specOptions[key]) {
+          specOptions[key] = new Set()
+        }
+        specOptions[key].add(value)
+      })
+    })
+    
+    // 转换为数组格式
+    const result: Record<string, string[]> = {}
+    Object.entries(specOptions).forEach(([key, values]) => {
+      result[key] = Array.from(values)
+    })
+    
+    return result
   }
 
   // 根據選擇的規格查找匹配的變體
