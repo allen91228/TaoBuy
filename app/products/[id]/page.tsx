@@ -79,6 +79,18 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
     return price
   }
 
+  // 移除 markdown 格式（如粗体标记）
+  const removeMarkdown = (text: string): string => {
+    return text
+      .replace(/\*\*(.*?)\*\*/g, '$1') // 移除 **粗体**
+      .replace(/__(.*?)__/g, '$1') // 移除 __粗体__
+      .replace(/\*(.*?)\*/g, '$1') // 移除 *斜体*
+      .replace(/_(.*?)_/g, '$1') // 移除 _斜体_
+      .replace(/~~(.*?)~~/g, '$1') // 移除 ~~删除线~~
+      .replace(/`(.*?)`/g, '$1') // 移除 `代码`
+      .replace(/\[(.*?)\]\(.*?\)/g, '$1') // 移除链接，只保留文本
+  }
+
   const handleAddToCart = () => {
     addItem({
       id: product.id,
@@ -160,7 +172,7 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
         {/* 商品資訊區域 */}
         <div className="space-y-6">
           <div>
-            <h1 className="text-3xl md:text-4xl font-bold mb-4">{product.name}</h1>
+            <h1 className="text-3xl md:text-4xl font-bold mb-4">{removeMarkdown(product.name)}</h1>
             <div className="flex items-center gap-4 mb-4">
               <span className="text-3xl font-bold text-primary">
                 NT$ {formatPrice(product.price).toLocaleString()}

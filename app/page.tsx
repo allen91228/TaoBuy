@@ -50,6 +50,18 @@ export default function Home() {
     return price
   }
 
+  // 移除 markdown 格式（如粗体标记）
+  const removeMarkdown = (text: string): string => {
+    return text
+      .replace(/\*\*(.*?)\*\*/g, '$1') // 移除 **粗体**
+      .replace(/__(.*?)__/g, '$1') // 移除 __粗体__
+      .replace(/\*(.*?)\*/g, '$1') // 移除 *斜体*
+      .replace(/_(.*?)_/g, '$1') // 移除 _斜体_
+      .replace(/~~(.*?)~~/g, '$1') // 移除 ~~删除线~~
+      .replace(/`(.*?)`/g, '$1') // 移除 `代码`
+      .replace(/\[(.*?)\]\(.*?\)/g, '$1') // 移除链接，只保留文本
+  }
+
   return (
     <div className="container py-12">
       {/* Hero Section */}
@@ -104,7 +116,7 @@ export default function Home() {
                 <CardHeader>
                   <Link href={`/products/${product.id}`}>
                     <CardTitle className="line-clamp-2 hover:text-primary transition-colors">
-                      {product.name}
+                      {removeMarkdown(product.name)}
                     </CardTitle>
                   </Link>
                   {product.description && (
