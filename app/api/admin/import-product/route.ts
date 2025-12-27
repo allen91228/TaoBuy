@@ -122,7 +122,11 @@ export async function POST(request: NextRequest) {
         // 修正：強制轉型 metadata 以通過 Prisma 的嚴格檢查
         metadata: (productData.metadata || {}) as any,
       },
-      create: productData,
+      create: {
+        ...productData,
+        // 修正：強制轉型 metadata 以通過 Prisma 的嚴格檢查
+        metadata: (productData.metadata || {}) as any,
+      },
     })
 
     // 10. 返回成功回應
