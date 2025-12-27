@@ -31,6 +31,7 @@ export default function ProductsPage() {
   const [statusFilter, setStatusFilter] = useState<string>("")
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
+  const [totalProducts, setTotalProducts] = useState(0)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [productToDelete, setProductToDelete] = useState<string | null>(null)
 
@@ -52,6 +53,7 @@ export default function ProductsPage() {
       if (data.success) {
         setProducts(data.data)
         setTotalPages(data.pagination.totalPages)
+        setTotalProducts(data.pagination.total)
       }
     } catch (error) {
       console.error("獲取商品列表錯誤:", error)
@@ -153,7 +155,10 @@ export default function ProductsPage() {
       <Card>
         <CardHeader>
           <CardTitle>商品列表</CardTitle>
-          <CardDescription>共 {products.length} 個商品</CardDescription>
+          <CardDescription>
+            共 {totalProducts} 個商品
+            {totalPages > 1 && `（第 ${page} 頁，每頁顯示 ${products.length} 個）`}
+          </CardDescription>
         </CardHeader>
         <CardContent>
           {loading ? (
@@ -229,9 +234,24 @@ export default function ProductsPage() {
                   >
                     上一頁
                   </Button>
-                  <span className="text-sm text-muted-foreground">
-                    第 {page} 頁，共 {totalPages} 頁
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground">
+                      第 {page} 頁，共 {totalPages} 頁
+                    </span>
+                    {totalPages > 5 && (
+                      <select
+                        value={page}
+                        onChange={(e) => setPage(parseInt(e.target.value))}
+                        className="h-9 rounded-md border border-input bg-background px-2 py-1 text-sm"
+                      >
+                        {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+                          <option key={p} value={p}>
+                            第 {p} 頁
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
                   <Button
                     variant="outline"
                     disabled={page === totalPages}

@@ -225,7 +225,11 @@ export default async function AdminDashboard() {
                 stats.recentProducts.map((product: any) => (
                   <div key={product.id} className="flex items-center justify-between border-b pb-2">
                     <div>
-                      <p className="text-sm font-medium">{product.name}</p>
+                      <Link href={`/admin/products/${product.id}`}>
+                        <p className="text-sm font-medium hover:text-primary transition-colors cursor-pointer">
+                          {product.name}
+                        </p>
+                      </Link>
                       <p className="text-xs text-muted-foreground">{product.importStatus}</p>
                     </div>
                     <div className="text-right">
