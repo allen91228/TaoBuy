@@ -422,15 +422,17 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
                       {options.map((option) => {
                         const isSelected = selectedSpecifications[specKey] === option
                         // 檢查該選項是否可用（是否有對應的變體）
-                        const isAvailable = variants.some((variant) => {
-                          // 檢查該變體是否有這個選項值
-                          if (variant.specifications[specKey] !== option) return false
-                          // 檢查其他已選擇的規格是否匹配
-                          return Object.keys(selectedSpecifications).every((key) => {
-                            if (key === specKey) return true // 跳過當前規格
-                            return !selectedSpecifications[key] || variant.specifications[key] === selectedSpecifications[key]
-                          })
-                        })
+                        // 临时禁用检查，让所有选项都可用
+                        const isAvailable = true
+                        // const isAvailable = variants.some((variant) => {
+                        //   // 檢查該變體是否有這個選項值
+                        //   if (variant.specifications[specKey] !== option) return false
+                        //   // 檢查其他已選擇的規格是否匹配
+                        //   return Object.keys(selectedSpecifications).every((key) => {
+                        //     if (key === specKey) return true // 跳過當前規格
+                        //     return !selectedSpecifications[key] || variant.specifications[key] === selectedSpecifications[key]
+                        //   })
+                        // })
 
                         return (
                           <button
