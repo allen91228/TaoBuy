@@ -32,6 +32,11 @@ export default function Home() {
         const data = await response.json()
         
         if (data.success) {
+          // #region agent log
+          data.products.forEach((p: Product, idx: number) => {
+            fetch('http://127.0.0.1:7242/ingest/aee0e817-0704-4436-8dbf-1c0e88679cb4',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app/page.tsx:35',message:'Product image URL',data:{productId:p.id,productName:p.name,imageUrl:p.image,imageUrlType:typeof p.image,imagesArray:p.images},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+          });
+          // #endregion
           setFeaturedProducts(data.products)
         }
       } catch (err) {
@@ -97,6 +102,14 @@ export default function Home() {
                       fill
                       className="object-cover hover:scale-105 transition-transform duration-300"
                       sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                      // #region agent log
+                      onError={(e) => {
+                        fetch('http://127.0.0.1:7242/ingest/aee0e817-0704-4436-8dbf-1c0e88679cb4',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app/page.tsx:94',message:'Image load error',data:{productId:product.id,imageUrl:product.image,fallbackUrl:'/placeholder.jpg'},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+                      }}
+                      onLoad={() => {
+                        fetch('http://127.0.0.1:7242/ingest/aee0e817-0704-4436-8dbf-1c0e88679cb4',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app/page.tsx:94',message:'Image load success',data:{productId:product.id,imageUrl:product.image},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+                      }}
+                      // #endregion
                     />
                   </div>
                 </Link>

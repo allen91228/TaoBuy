@@ -57,6 +57,12 @@ export async function GET(request: NextRequest) {
       productNames: products.map(p => p.name),
     })
     
+    // #region agent log
+    products.forEach((p) => {
+      fetch('http://127.0.0.1:7242/ingest/aee0e817-0704-4436-8dbf-1c0e88679cb4',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app/api/products/route.ts:58',message:'Product image data from API',data:{productId:p.id,imageUrl:p.image,imageUrlLength:p.image?.length||0,hasImage:!!p.image,imagesArrayLength:p.images?.length||0},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+    });
+    // #endregion
+    
     // 取得總數（用於分頁）
     const total = await prisma.product.count({
       where: whereCondition,
