@@ -72,6 +72,17 @@ export default function CartPage() {
                         {item.name}
                       </h3>
                     </Link>
+                    {/* 顯示規格信息 */}
+                    {item.specifications && Object.keys(item.specifications).length > 0 && (
+                      <div className="mb-2 text-sm text-muted-foreground">
+                        {Object.entries(item.specifications).map(([key, value], index) => (
+                          <span key={key}>
+                            {index > 0 && ' / '}
+                            <span className="font-medium">{key}:</span> {value}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                     <div className="flex items-center justify-between">
                       <span className="text-xl font-bold text-primary">
                         NT$ {item.price.toLocaleString()}
@@ -82,7 +93,7 @@ export default function CartPage() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                            onClick={() => updateQuantity(item, item.quantity - 1)}
                             className="h-8 w-8"
                           >
                             <Minus className="h-4 w-4" />
@@ -93,7 +104,7 @@ export default function CartPage() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                            onClick={() => updateQuantity(item, item.quantity + 1)}
                             className="h-8 w-8"
                           >
                             <Plus className="h-4 w-4" />
@@ -104,7 +115,7 @@ export default function CartPage() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => removeItem(item.id)}
+                          onClick={() => removeItem(item)}
                           className="h-8 w-8 text-destructive hover:text-destructive"
                         >
                           <Trash2 className="h-4 w-4" />

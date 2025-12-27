@@ -17,17 +17,28 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'Content-Type, x-api-secret',
 }
 
+// 變體類型定義
+interface Variant {
+  id?: string // 可選，如果不提供則自動生成
+  specifications: Record<string, string> // 規格組合，如 { "颜色": "红色", "尺寸": "M" }
+  price: number // 變體價格
+  stock?: number // 變體庫存（可選）
+  sku?: string // SKU（可選）
+}
+
 // 請求 Body 類型定義
 interface ImportProductRequest {
   sourceUrl: string // 淘寶網址
   title: string // 標題
   images: string[] // 圖片陣列
   originalPrice: number // 原始價格（人民幣）
-  price: number // 本地售價（TWD）
-  specifications?: Record<string, any> // 規格（可選）
+  price: number // 本地售價（TWD）- 基礎價格
+  specifications?: Record<string, any> // 規格（可選，舊格式，向後兼容）
   description?: string // 商品描述（可選）
   category?: string // 分類（可選）
   externalId?: string // 外部 ID（可選，如果不提供則從 URL 提取）
+  variants?: Variant[] // 變體列表（可選）
+  specificationOptions?: Record<string, string[]> // 規格選項，如 { "颜色": ["红色", "蓝色"], "尺寸": ["S", "M", "L"] }
 }
 
 // 處理 CORS 預檢請求
@@ -103,6 +114,35 @@ export async function POST(request: NextRequest) {
 
     // 7. 準備商品資料
     // 確保 price 和 originalPrice 正確轉換為 Prisma Decimal 類型
+    
+    // 構建 metadata 對象，包含變體和規格選項
+    let metadata: any = null
+    if (body.variants || body.specificationOptions || body.specifications) {
+      metadata = {}
+      
+      // 如果有變體數據，處理變體
+      if (body.variants && Array.isArray(body.variants)) {
+        // 為每個變體生成 ID（如果沒有提供）
+        metadata.variants = body.variants.map((variant, index) => ({
+          id: variant.id || `variant-${Date.now()}-${index}`,
+          specifications: variant.specifications,
+          price: variant.price,
+          stock: variant.stock ?? null,
+          sku: variant.sku || null,
+        }))
+      }
+      
+      // 如果有規格選項，添加到 metadata
+      if (body.specificationOptions) {
+        metadata.specificationOptions = body.specificationOptions
+      }
+      
+      // 向後兼容：如果有舊的 specifications 格式，合併到 metadata
+      if (body.specifications && typeof body.specifications === 'object') {
+        metadata = { ...metadata, ...body.specifications }
+      }
+    }
+    
     const productData = {
       name: body.title,
       slug: slug,
@@ -117,7 +157,7 @@ export async function POST(request: NextRequest) {
       externalId: externalId,
       originalPrice: body.originalPrice ? new Prisma.Decimal(body.originalPrice) : null, // 轉換為 Prisma Decimal
       importStatus: ImportStatus.PUBLISHED, // 匯入後直接發布
-      metadata: body.specifications ? (typeof body.specifications === 'object' ? body.specifications : null) : null,
+      metadata: metadata as any,
     }
 
     // 7.1 驗證資料完整性

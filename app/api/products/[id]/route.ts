@@ -29,6 +29,7 @@ export async function GET(
         category: true,
         stock: true,
         price: true,
+        metadata: true, // 包含規格和變體數據
         createdAt: true,
         updatedAt: true,
       },

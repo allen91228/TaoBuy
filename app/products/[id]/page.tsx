@@ -14,6 +14,14 @@ interface ProductDetailPageProps {
   }
 }
 
+interface Variant {
+  id: string
+  specifications: Record<string, string>
+  price: number
+  stock?: number | null
+  sku?: string | null
+}
+
 interface Product {
   id: string
   name: string
@@ -23,6 +31,7 @@ interface Product {
   images: string[]
   category: string | null
   price: number | string
+  metadata?: any // 包含 variants 和 specificationOptions
   createdAt: string
   updatedAt: string
 }
@@ -33,7 +42,17 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
   const [error, setError] = useState<string | null>(null)
   const [quantity, setQuantity] = useState(1)
   const [selectedImage, setSelectedImage] = useState(0)
+  const [selectedSpecifications, setSelectedSpecifications] = useState<Record<string, string>>({})
+  const [currentPrice, setCurrentPrice] = useState<number>(0)
+  const [currentVariant, setCurrentVariant] = useState<Variant | null>(null)
   const addItem = useCartStore((state) => state.addItem)
+
+  const formatPrice = (price: number | string): number => {
+    if (typeof price === 'string') {
+      return parseFloat(price)
+    }
+    return price
+  }
 
   useEffect(() => {
     async function fetchProduct() {
@@ -44,6 +63,10 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
         if (data.success && data.product) {
           setProduct(data.product)
           setSelectedImage(0) // 重置選中的圖片索引
+          
+          // 初始化價格
+          const initialPrice = formatPrice(data.product.price)
+          setCurrentPrice(initialPrice)
         } else {
           setError('商品不存在')
         }
@@ -57,6 +80,73 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
 
     fetchProduct()
   }, [params.id])
+
+  // 解析規格數據
+  const getSpecificationOptions = (): Record<string, string[]> => {
+    if (!product?.metadata?.specificationOptions) return {}
+    return product.metadata.specificationOptions
+  }
+
+  const getVariants = (): Variant[] => {
+    if (!product?.metadata?.variants) return []
+    return product.metadata.variants.map((v: any) => ({
+      id: v.id,
+      specifications: v.specifications,
+      price: typeof v.price === 'string' ? parseFloat(v.price) : v.price,
+      stock: v.stock ?? null,
+      sku: v.sku ?? null,
+    }))
+  }
+
+  // 根據選擇的規格查找匹配的變體
+  useEffect(() => {
+    if (!product) return
+
+    const variants = getVariants()
+    const specOptions = getSpecificationOptions()
+    
+    // 如果沒有規格選項，使用基礎價格
+    if (Object.keys(specOptions).length === 0) {
+      setCurrentPrice(formatPrice(product.price))
+      setCurrentVariant(null)
+      return
+    }
+
+    // 檢查是否所有規格都已選擇
+    const allSpecsSelected = Object.keys(specOptions).every(
+      (key) => selectedSpecifications[key]
+    )
+
+    if (allSpecsSelected) {
+      // 查找匹配的變體
+      const matchedVariant = variants.find((variant) => {
+        return Object.keys(selectedSpecifications).every(
+          (key) => variant.specifications[key] === selectedSpecifications[key]
+        )
+      })
+
+      if (matchedVariant) {
+        setCurrentVariant(matchedVariant)
+        setCurrentPrice(matchedVariant.price)
+      } else {
+        // 沒有匹配的變體，使用基礎價格
+        setCurrentVariant(null)
+        setCurrentPrice(formatPrice(product.price))
+      }
+    } else {
+      // 規格未完全選擇，使用基礎價格
+      setCurrentVariant(null)
+      setCurrentPrice(formatPrice(product.price))
+    }
+  }, [selectedSpecifications, product])
+
+  // 處理規格選擇
+  const handleSpecificationChange = (specKey: string, value: string) => {
+    setSelectedSpecifications((prev) => ({
+      ...prev,
+      [specKey]: value,
+    }))
+  }
 
   if (loading) {
     return (
@@ -72,13 +162,6 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
     notFound()
   }
 
-  const formatPrice = (price: number | string): number => {
-    if (typeof price === 'string') {
-      return parseFloat(price)
-    }
-    return price
-  }
-
   // 移除 markdown 格式（如粗体标记）
   const removeMarkdown = (text: string): string => {
     return text
@@ -92,16 +175,35 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
   }
 
   const handleAddToCart = () => {
+    // 檢查是否有規格但未完全選擇
+    const specOptions = getSpecificationOptions()
+    const hasSpecs = Object.keys(specOptions).length > 0
+    const allSpecsSelected = hasSpecs 
+      ? Object.keys(specOptions).every((key) => selectedSpecifications[key])
+      : true
+
+    if (hasSpecs && !allSpecsSelected) {
+      alert('請選擇所有規格')
+      return
+    }
+
     addItem({
       id: product.id,
       name: product.name,
-      price: formatPrice(product.price),
+      price: currentPrice,
       image: product.image || '',
       quantity,
+      variantId: currentVariant?.id,
+      specifications: Object.keys(selectedSpecifications).length > 0 
+        ? selectedSpecifications 
+        : undefined,
     })
     
     // 顯示提示（可以之後改用 toast）
-    alert(`已將 ${product.name} x${quantity} 加入購物車！`)
+    const specText = currentVariant 
+      ? ` (${Object.values(selectedSpecifications).join(', ')})`
+      : ''
+    alert(`已將 ${product.name}${specText} x${quantity} 加入購物車！`)
   }
 
   const handleIncreaseQuantity = () => {
@@ -175,10 +277,69 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
             <h1 className="text-3xl md:text-4xl font-bold mb-4">{removeMarkdown(product.name)}</h1>
             <div className="flex items-center gap-4 mb-4">
               <span className="text-3xl font-bold text-primary">
-                NT$ {formatPrice(product.price).toLocaleString()}
+                NT$ {currentPrice.toLocaleString()}
               </span>
             </div>
           </div>
+
+          {/* 規格選擇器 */}
+          {(() => {
+            const specOptions = getSpecificationOptions()
+            const variants = getVariants()
+            
+            if (Object.keys(specOptions).length === 0) {
+              return null
+            }
+
+            return (
+              <div className="space-y-4 pt-4 border-t">
+                {Object.entries(specOptions).map(([specKey, options]) => (
+                  <div key={specKey} className="space-y-2">
+                    <span className="text-sm font-medium">{specKey}:</span>
+                    <div className="flex flex-wrap gap-2">
+                      {options.map((option) => {
+                        const isSelected = selectedSpecifications[specKey] === option
+                        // 檢查該選項是否可用（是否有對應的變體）
+                        const isAvailable = variants.some((variant) => {
+                          // 檢查該變體是否有這個選項值
+                          if (variant.specifications[specKey] !== option) return false
+                          // 檢查其他已選擇的規格是否匹配
+                          return Object.keys(selectedSpecifications).every((key) => {
+                            if (key === specKey) return true // 跳過當前規格
+                            return !selectedSpecifications[key] || variant.specifications[key] === selectedSpecifications[key]
+                          })
+                        })
+
+                        return (
+                          <button
+                            key={option}
+                            onClick={() => handleSpecificationChange(specKey, option)}
+                            disabled={!isAvailable}
+                            className={`px-4 py-2 rounded-md border text-sm transition-all ${
+                              isSelected
+                                ? 'bg-primary text-primary-foreground border-primary'
+                                : isAvailable
+                                ? 'bg-background hover:bg-muted border-border'
+                                : 'bg-muted text-muted-foreground border-border opacity-50 cursor-not-allowed'
+                            }`}
+                          >
+                            {option}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                ))}
+                
+                {/* 顯示當前變體的庫存信息 */}
+                {currentVariant && currentVariant.stock !== null && (
+                  <div className="text-sm text-muted-foreground">
+                    庫存: {currentVariant.stock > 0 ? `${currentVariant.stock} 件` : '缺貨'}
+                  </div>
+                )}
+              </div>
+            )
+          })()}
 
           {product.description && (
             <div className="prose prose-sm max-w-none dark:prose-invert">
@@ -244,9 +405,36 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
               onClick={handleAddToCart}
               className="w-full h-12 text-lg"
               size="lg"
+              disabled={
+                (() => {
+                  const specOptions = getSpecificationOptions()
+                  const hasSpecs = Object.keys(specOptions).length > 0
+                  if (!hasSpecs) return false
+                  
+                  const allSpecsSelected = Object.keys(specOptions).every(
+                    (key) => selectedSpecifications[key]
+                  )
+                  if (!allSpecsSelected) return false
+                  
+                  // 如果有變體但沒有庫存，禁用按鈕
+                  return currentVariant !== null && (currentVariant.stock === null || currentVariant.stock === 0)
+                })()
+              }
             >
               <ShoppingCart className="mr-2 h-5 w-5" />
-              加入購物車
+              {(() => {
+                const specOptions = getSpecificationOptions()
+                const hasSpecs = Object.keys(specOptions).length > 0
+                const allSpecsSelected = hasSpecs 
+                  ? Object.keys(specOptions).every((key) => selectedSpecifications[key])
+                  : true
+                
+                if (!allSpecsSelected) return '請選擇規格'
+                if (currentVariant && (currentVariant.stock === null || currentVariant.stock === 0)) {
+                  return '已售完'
+                }
+                return '加入購物車'
+              })()}
             </Button>
           </div>
 
