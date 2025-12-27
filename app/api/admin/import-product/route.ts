@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { generateSlug, extractExternalIdFromUrl } from '@/lib/slug'
 import { generateProductId } from '@/lib/product-id'
-import { ImportStatus } from '@prisma/client'
+import { ImportStatus, Prisma } from '@prisma/client'
 
 // 強制動態執行，避免 Vercel Build Error (Failed to collect page data)
 export const dynamic = 'force-dynamic'
@@ -102,6 +102,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 7. 準備商品資料
+    // 確保 price 和 originalPrice 正確轉換為 Prisma Decimal 類型
     const productData = {
       name: body.title,
       slug: slug,
@@ -110,32 +111,78 @@ export async function POST(request: NextRequest) {
       images: body.images,
       category: body.category || null,
       stock: 0, // 預設庫存為 0
-      price: body.price,
+      price: new Prisma.Decimal(body.price), // 轉換為 Prisma Decimal
       isActive: true, // 匯入的商品自動啟用並上架
       sourceUrl: body.sourceUrl,
       externalId: externalId,
-      originalPrice: body.originalPrice,
+      originalPrice: body.originalPrice ? new Prisma.Decimal(body.originalPrice) : null, // 轉換為 Prisma Decimal
       importStatus: ImportStatus.PUBLISHED, // 匯入後直接發布
       metadata: body.specifications ? (typeof body.specifications === 'object' ? body.specifications : null) : null,
     }
 
-    // 8. 使用 Upsert 來建立或更新商品
-    const product = await prisma.product.upsert({
-      where: {
-        externalId: externalId,
-      },
-      update: {
-        ...productData,
-        updatedAt: new Date(),
-        // 修正：強制轉型 metadata 以通過 Prisma 的嚴格檢查
-        metadata: (productData.metadata || {}) as any,
-      },
-      create: {
-        ...productData,
-        // 修正：強制轉型 metadata 以通過 Prisma 的嚴格檢查
-        metadata: (productData.metadata || {}) as any,
-      },
+    // 7.1 驗證資料完整性
+    if (!productData.name || !productData.slug || !productData.externalId) {
+      console.error('資料驗證失敗:', {
+        hasName: !!productData.name,
+        hasSlug: !!productData.slug,
+        hasExternalId: !!productData.externalId,
+      })
+      return NextResponse.json(
+        { error: '資料驗證失敗：缺少必要欄位' },
+        { status: 400, headers: corsHeaders }
+      )
+    }
+
+    // 7.2 記錄準備寫入的資料（用於調試）
+    console.log('準備寫入商品資料:', {
+      externalId: productData.externalId,
+      name: productData.name,
+      slug: productData.slug,
+      price: productData.price.toString(),
+      originalPrice: productData.originalPrice?.toString() || 'null',
+      imagesCount: productData.images.length,
+      importStatus: productData.importStatus,
     })
+
+    // 8. 使用 Upsert 來建立或更新商品
+    let product
+    try {
+      product = await prisma.product.upsert({
+        where: {
+          externalId: externalId,
+        },
+        update: {
+          ...productData,
+          updatedAt: new Date(),
+          // 修正：強制轉型 metadata 以通過 Prisma 的嚴格檢查
+          metadata: (productData.metadata || {}) as any,
+        },
+        create: {
+          ...productData,
+          // 修正：強制轉型 metadata 以通過 Prisma 的嚴格檢查
+          metadata: (productData.metadata || {}) as any,
+        },
+      })
+      
+      console.log('商品寫入成功:', {
+        id: product.id,
+        name: product.name,
+        slug: product.slug,
+        externalId: product.externalId,
+      })
+    } catch (dbError) {
+      console.error('資料庫寫入錯誤:', {
+        error: dbError,
+        message: dbError instanceof Error ? dbError.message : 'Unknown error',
+        stack: dbError instanceof Error ? dbError.stack : undefined,
+        productData: {
+          externalId: productData.externalId,
+          name: productData.name,
+          slug: productData.slug,
+        },
+      })
+      throw dbError // 重新拋出錯誤，讓外層 catch 處理
+    }
 
     // 9. 生成自訂格式的商品ID
     const productCode = generateProductId()
@@ -163,21 +210,38 @@ export async function POST(request: NextRequest) {
     )
 
   } catch (error) {
-    console.error('匯入商品錯誤:', error)
+    // 詳細的錯誤記錄
+    console.error('匯入商品錯誤:', {
+      error,
+      errorType: error instanceof Error ? error.constructor.name : typeof error,
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+    })
     
     // 處理 Prisma 錯誤
     if (error instanceof Error) {
       // 如果是唯一約束違反（例如 slug 重複）
-      if (error.message.includes('Unique constraint')) {
+      if (error.message.includes('Unique constraint') || error.message.includes('Unique constraint violation')) {
         return NextResponse.json(
-          { error: '商品已存在或 slug 重複' },
+          { error: '商品已存在或 slug 重複', details: error.message },
           { status: 409, headers: corsHeaders }
+        )
+      }
+      
+      // 如果是 Prisma 驗證錯誤
+      if (error.message.includes('Invalid value') || error.message.includes('Argument')) {
+        return NextResponse.json(
+          { error: '資料格式錯誤', details: error.message },
+          { status: 400, headers: corsHeaders }
         )
       }
     }
 
     return NextResponse.json(
-      { error: '伺服器錯誤：無法匯入商品' },
+      { 
+        error: '伺服器錯誤：無法匯入商品',
+        details: error instanceof Error ? error.message : 'Unknown error',
+      },
       { status: 500, headers: corsHeaders }
     )
   }
