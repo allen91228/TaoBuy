@@ -65,7 +65,9 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
 
     const fetchOrder = async () => {
       try {
-        const response = await fetch(`/api/admin/orders/${orderId}`)
+        const response = await fetch(`/api/admin/orders/${orderId}`, {
+          credentials: 'include',
+        })
         const data = await response.json()
 
         if (data.success) {
@@ -98,6 +100,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
         headers: {
           "Content-Type": "application/json",
         },
+        credentials: 'include',
         body: JSON.stringify(formData),
       })
 

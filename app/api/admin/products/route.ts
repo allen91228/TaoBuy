@@ -7,12 +7,23 @@ export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
   try {
+    // #region agent log
+    console.log('[API] GET /api/admin/products - checking auth')
+    // #endregion
+    
     if (!checkApiSecretAuth(request)) {
+      // #region agent log
+      console.log('[API] GET /api/admin/products - auth failed')
+      // #endregion
       return NextResponse.json(
         { error: '未授權：API Secret 不正確' },
         { status: 401 }
       )
     }
+
+    // #region agent log
+    console.log('[API] GET /api/admin/products - auth passed')
+    // #endregion
 
     const searchParams = request.nextUrl.searchParams
     const page = parseInt(searchParams.get('page') || '1')

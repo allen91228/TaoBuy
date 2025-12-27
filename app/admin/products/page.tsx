@@ -44,7 +44,9 @@ export default function ProductsPage() {
       if (search) params.append("search", search)
       if (statusFilter) params.append("status", statusFilter)
 
-      const response = await fetch(`/api/admin/products?${params}`)
+      const response = await fetch(`/api/admin/products?${params}`, {
+        credentials: 'include', // 确保发送 cookie
+      })
       const data = await response.json()
 
       if (data.success) {
@@ -78,6 +80,7 @@ export default function ProductsPage() {
     try {
       const response = await fetch(`/api/admin/products/${productId}`, {
         method: "DELETE",
+        credentials: 'include', // 确保发送 cookie
       })
 
       const data = await response.json()

@@ -60,7 +60,9 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
 
     const fetchProduct = async () => {
       try {
-        const response = await fetch(`/api/admin/products/${productId}`)
+        const response = await fetch(`/api/admin/products/${productId}`, {
+          credentials: 'include',
+        })
         const data = await response.json()
 
         if (data.success) {
@@ -108,6 +110,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
         headers: {
           "Content-Type": "application/json",
         },
+        credentials: 'include',
         body: JSON.stringify({
           ...formData,
           images: imagesArray,

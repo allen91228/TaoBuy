@@ -34,7 +34,9 @@ export default function UsersPage() {
       if (search) params.append("search", search)
       if (roleFilter) params.append("role", roleFilter)
 
-      const response = await fetch(`/api/admin/users?${params}`)
+      const response = await fetch(`/api/admin/users?${params}`, {
+        credentials: 'include',
+      })
       const data = await response.json()
 
       if (data.success) {
@@ -72,6 +74,7 @@ export default function UsersPage() {
         headers: {
           "Content-Type": "application/json",
         },
+        credentials: 'include',
         body: JSON.stringify({ role: newRole }),
       })
 

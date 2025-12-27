@@ -11,6 +11,7 @@ export function AdminHeader() {
     try {
       await fetch("/api/admin/auth/logout", {
         method: "POST",
+        credentials: 'include',
       })
       router.push("/admin/login")
       router.refresh()

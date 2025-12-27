@@ -39,7 +39,9 @@ export default function OrdersPage() {
       if (search) params.append("search", search)
       if (statusFilter) params.append("status", statusFilter)
 
-      const response = await fetch(`/api/admin/orders?${params}`)
+      const response = await fetch(`/api/admin/orders?${params}`, {
+        credentials: 'include',
+      })
       const data = await response.json()
 
       if (data.success) {
