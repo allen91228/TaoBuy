@@ -87,9 +87,9 @@ export default function ProductsPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {products.map((product) => (
+          {products.map((product, index) => (
             <Card key={product.id} className="flex flex-col hover:shadow-lg transition-shadow">
-              <Link href={`/products/${product.slug}`}>
+              <Link href={`/products/${product.id}`}>
                 <div className="relative aspect-square w-full overflow-hidden rounded-t-lg">
                   <Image
                     src={product.image || '/placeholder.jpg'}
@@ -97,11 +97,13 @@ export default function ProductsPage() {
                     fill
                     className="object-cover hover:scale-105 transition-transform duration-300"
                     sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                    priority={index < 8}
+                    loading={index < 8 ? undefined : 'lazy'}
                   />
                 </div>
               </Link>
               <CardHeader>
-                <Link href={`/products/${product.slug}`}>
+                <Link href={`/products/${product.id}`}>
                   <CardTitle className="line-clamp-2 hover:text-primary transition-colors">
                     {product.name}
                   </CardTitle>
@@ -123,7 +125,7 @@ export default function ProductsPage() {
                 </div>
               </CardContent>
               <CardFooter>
-                <Link href={`/products/${product.slug}`} className="w-full">
+                <Link href={`/products/${product.id}`} className="w-full">
                   <Button className="w-full">查看詳情</Button>
                 </Link>
               </CardFooter>

@@ -2,34 +2,88 @@
 
 import { notFound } from "next/navigation"
 import Image from "next/image"
-import { useState } from "react"
-import { getProductBySlug } from "@/lib/mock-data"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { useCartStore } from "@/store/cart-store"
 import { ShoppingCart, Plus, Minus } from "lucide-react"
 
 interface ProductDetailPageProps {
   params: {
-    slug: string
+    id: string
   }
 }
 
+interface Product {
+  id: string
+  name: string
+  slug: string
+  description: string | null
+  image: string | null
+  images: string[]
+  category: string | null
+  stock: number
+  price: number | string
+  createdAt: string
+  updatedAt: string
+}
+
 export default function ProductDetailPage({ params }: ProductDetailPageProps) {
-  const product = getProductBySlug(params.slug)
+  const [product, setProduct] = useState<Product | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [quantity, setQuantity] = useState(1)
   const [selectedImage, setSelectedImage] = useState(0)
   const addItem = useCartStore((state) => state.addItem)
 
-  if (!product) {
+  useEffect(() => {
+    async function fetchProduct() {
+      try {
+        const response = await fetch(`/api/products/${params.id}`)
+        const data = await response.json()
+
+        if (data.success && data.product) {
+          setProduct(data.product)
+        } else {
+          setError('商品不存在')
+        }
+      } catch (err) {
+        console.error('載入商品錯誤:', err)
+        setError('無法載入商品')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchProduct()
+  }, [params.id])
+
+  if (loading) {
+    return (
+      <div className="container py-12">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <p className="text-muted-foreground">載入中...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (error || !product) {
     notFound()
+  }
+
+  const formatPrice = (price: number | string): number => {
+    if (typeof price === 'string') {
+      return parseFloat(price)
+    }
+    return price
   }
 
   const handleAddToCart = () => {
     addItem({
       id: product.id,
       name: product.name,
-      price: product.price,
-      image: product.image,
+      price: formatPrice(product.price),
+      image: product.image || '',
       quantity,
     })
     
@@ -57,7 +111,7 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
           {/* 主圖 */}
           <div className="relative aspect-square w-full overflow-hidden rounded-lg border">
             <Image
-              src={product.images[selectedImage] || product.image}
+              src={product.images[selectedImage] || product.image || '/placeholder.jpg'}
               alt={product.name}
               fill
               className="object-cover"
@@ -98,7 +152,7 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
             <h1 className="text-3xl md:text-4xl font-bold mb-4">{product.name}</h1>
             <div className="flex items-center gap-4 mb-4">
               <span className="text-3xl font-bold text-primary">
-                NT$ {product.price.toLocaleString()}
+                NT$ {formatPrice(product.price).toLocaleString()}
               </span>
               <span className="text-sm text-muted-foreground">
                 庫存: {product.stock} 件
@@ -159,7 +213,7 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
           <div className="pt-4 border-t space-y-2">
             <div className="flex justify-between">
               <span className="text-sm text-muted-foreground">分類:</span>
-              <span className="text-sm font-medium">{product.category}</span>
+              <span className="text-sm font-medium">{product.category || '未分類'}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-sm text-muted-foreground">商品編號:</span>

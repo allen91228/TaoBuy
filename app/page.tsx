@@ -32,11 +32,6 @@ export default function Home() {
         const data = await response.json()
         
         if (data.success) {
-          // #region agent log
-          data.products.forEach((p: Product, idx: number) => {
-            fetch('http://127.0.0.1:7242/ingest/aee0e817-0704-4436-8dbf-1c0e88679cb4',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app/page.tsx:35',message:'Product image URL',data:{productId:p.id,productName:p.name,imageUrl:p.image,imageUrlType:typeof p.image,imagesArray:p.images},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-          });
-          // #endregion
           setFeaturedProducts(data.products)
         }
       } catch (err) {
@@ -92,9 +87,9 @@ export default function Home() {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {featuredProducts.map((product) => (
+            {featuredProducts.map((product, index) => (
               <Card key={product.id} className="flex flex-col hover:shadow-lg transition-shadow">
-                <Link href={`/products/${product.slug}`}>
+                <Link href={`/products/${product.id}`}>
                   <div className="relative aspect-square w-full overflow-hidden rounded-t-lg">
                     <Image
                       src={product.image || '/placeholder.jpg'}
@@ -102,19 +97,13 @@ export default function Home() {
                       fill
                       className="object-cover hover:scale-105 transition-transform duration-300"
                       sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-                      // #region agent log
-                      onError={(e) => {
-                        fetch('http://127.0.0.1:7242/ingest/aee0e817-0704-4436-8dbf-1c0e88679cb4',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app/page.tsx:94',message:'Image load error',data:{productId:product.id,imageUrl:product.image,fallbackUrl:'/placeholder.jpg'},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-                      }}
-                      onLoad={() => {
-                        fetch('http://127.0.0.1:7242/ingest/aee0e817-0704-4436-8dbf-1c0e88679cb4',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app/page.tsx:94',message:'Image load success',data:{productId:product.id,imageUrl:product.image},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-                      }}
-                      // #endregion
+                      priority={index < 4}
+                      loading={index < 4 ? undefined : 'lazy'}
                     />
                   </div>
                 </Link>
                 <CardHeader>
-                  <Link href={`/products/${product.slug}`}>
+                  <Link href={`/products/${product.id}`}>
                     <CardTitle className="line-clamp-2 hover:text-primary transition-colors">
                       {product.name}
                     </CardTitle>
@@ -136,7 +125,7 @@ export default function Home() {
                   </div>
                 </CardContent>
                 <CardFooter>
-                  <Link href={`/products/${product.slug}`} className="w-full">
+                  <Link href={`/products/${product.id}`} className="w-full">
                     <Button className="w-full">查看詳情</Button>
                   </Link>
                 </CardFooter>
