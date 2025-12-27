@@ -141,9 +141,8 @@ export async function POST(request: NextRequest) {
     const productCode = generateProductId()
     
     // 10. 返回成功回應（包含商品連結和自訂商品ID）
-    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 
-                   (request.headers.get('origin') || 
-                    request.nextUrl.origin)
+    // 優先使用環境變數，否則使用請求的實際域名（不依賴 origin header，因為可能是擴展 URL）
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || request.nextUrl.origin
     const productUrl = `${baseUrl}/products/${product.slug}`
     
     return NextResponse.json(
