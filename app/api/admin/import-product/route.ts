@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { generateSlug, extractExternalIdFromUrl } from '@/lib/slug'
+import { generateProductId } from '@/lib/product-id'
 import { ImportStatus } from '@prisma/client'
 
 // 強制動態執行，避免 Vercel Build Error (Failed to collect page data)
@@ -136,7 +137,10 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    // 9. 返回成功回應（包含商品連結）
+    // 9. 生成自訂格式的商品ID
+    const productCode = generateProductId()
+    
+    // 10. 返回成功回應（包含商品連結和自訂商品ID）
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 
                    (request.headers.get('origin') || 
                     request.nextUrl.origin)
@@ -147,7 +151,8 @@ export async function POST(request: NextRequest) {
         success: true,
         message: existingProduct ? '商品已更新' : '商品已建立',
         product: {
-          id: product.id,
+          id: product.id, // Prisma 自動生成的 ID
+          productCode: productCode, // 自訂格式的商品ID
           name: product.name,
           slug: product.slug,
           externalId: product.externalId,

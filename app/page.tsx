@@ -1,14 +1,55 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
-import { mockProducts } from "@/lib/mock-data"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 
+interface Product {
+  id: string
+  name: string
+  slug: string
+  description: string | null
+  image: string | null
+  images: string[]
+  category: string | null
+  stock: number
+  price: number | string
+  createdAt: string
+  updatedAt: string
+}
+
 export default function Home() {
-  // 顯示前 6 個商品
-  const featuredProducts = mockProducts.slice(0, 6)
+  const [featuredProducts, setFeaturedProducts] = useState<Product[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    async function fetchProducts() {
+      try {
+        // 只取得最新的 6 個商品（已經按創建時間倒序）
+        const response = await fetch('/api/products?limit=6')
+        const data = await response.json()
+        
+        if (data.success) {
+          setFeaturedProducts(data.products)
+        }
+      } catch (err) {
+        console.error('載入商品錯誤:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+    
+    fetchProducts()
+  }, [])
+
+  const formatPrice = (price: number | string): number => {
+    if (typeof price === 'string') {
+      return parseFloat(price)
+    }
+    return price
+  }
 
   return (
     <div className="container py-12">
@@ -36,48 +77,60 @@ export default function Home() {
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {featuredProducts.map((product) => (
-            <Card key={product.id} className="flex flex-col hover:shadow-lg transition-shadow">
-              <Link href={`/products/${product.slug}`}>
-                <div className="relative aspect-square w-full overflow-hidden rounded-t-lg">
-                  <Image
-                    src={product.image}
-                    alt={product.name}
-                    fill
-                    className="object-cover hover:scale-105 transition-transform duration-300"
-                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-                  />
-                </div>
-              </Link>
-              <CardHeader>
+        {loading ? (
+          <div className="flex items-center justify-center min-h-[400px]">
+            <p className="text-muted-foreground">載入中...</p>
+          </div>
+        ) : featuredProducts.length === 0 ? (
+          <div className="flex items-center justify-center min-h-[400px]">
+            <p className="text-muted-foreground">目前沒有商品</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {featuredProducts.map((product) => (
+              <Card key={product.id} className="flex flex-col hover:shadow-lg transition-shadow">
                 <Link href={`/products/${product.slug}`}>
-                  <CardTitle className="line-clamp-2 hover:text-primary transition-colors">
-                    {product.name}
-                  </CardTitle>
+                  <div className="relative aspect-square w-full overflow-hidden rounded-t-lg">
+                    <Image
+                      src={product.image || '/placeholder.jpg'}
+                      alt={product.name}
+                      fill
+                      className="object-cover hover:scale-105 transition-transform duration-300"
+                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                    />
+                  </div>
                 </Link>
-                <CardDescription className="line-clamp-2">
-                  {product.description}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="flex-1">
-                <div className="flex items-center justify-between">
-                  <span className="text-2xl font-bold text-primary">
-                    NT$ {product.price.toLocaleString()}
-                  </span>
-                  <span className="text-sm text-muted-foreground">
-                    庫存: {product.stock}
-                  </span>
-                </div>
-              </CardContent>
-              <CardFooter>
-                <Link href={`/products/${product.slug}`} className="w-full">
-                  <Button className="w-full">查看詳情</Button>
-                </Link>
-              </CardFooter>
-            </Card>
-          ))}
-        </div>
+                <CardHeader>
+                  <Link href={`/products/${product.slug}`}>
+                    <CardTitle className="line-clamp-2 hover:text-primary transition-colors">
+                      {product.name}
+                    </CardTitle>
+                  </Link>
+                  {product.description && (
+                    <CardDescription className="line-clamp-2">
+                      {product.description}
+                    </CardDescription>
+                  )}
+                </CardHeader>
+                <CardContent className="flex-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-2xl font-bold text-primary">
+                      NT$ {formatPrice(product.price).toLocaleString()}
+                    </span>
+                    <span className="text-sm text-muted-foreground">
+                      庫存: {product.stock}
+                    </span>
+                  </div>
+                </CardContent>
+                <CardFooter>
+                  <Link href={`/products/${product.slug}`} className="w-full">
+                    <Button className="w-full">查看詳情</Button>
+                  </Link>
+                </CardFooter>
+              </Card>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   )
