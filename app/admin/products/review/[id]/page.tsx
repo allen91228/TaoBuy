@@ -10,6 +10,15 @@ import { ArrowLeft, Save, X, CheckCircle, ArrowRight } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 
+interface Variant {
+  id: string
+  specifications: Record<string, string>
+  price: number | string
+  sku?: string | null
+  image?: string | null
+  images?: string[]
+}
+
 interface Product {
   id: string
   name: string
@@ -37,6 +46,8 @@ export default function ReviewProductPage({ params }: { params: Promise<{ id: st
     name: "",
     description: "",
     images: [] as string[],
+    price: "",
+    variants: [] as Variant[],
   })
 
   useEffect(() => {
@@ -60,10 +71,25 @@ export default function ReviewProductPage({ params }: { params: Promise<{ id: st
         if (data.success) {
           const p = data.data
           setProduct(p)
+          
+          // 解析变体数据
+          const variants: Variant[] = p.metadata?.variants 
+            ? p.metadata.variants.map((v: any) => ({
+                id: v.id || `variant-${Date.now()}-${Math.random()}`,
+                specifications: v.specifications || {},
+                price: typeof v.price === 'string' ? parseFloat(v.price) : v.price,
+                sku: v.sku || null,
+                image: v.image || null,
+                images: v.images && Array.isArray(v.images) ? v.images : undefined,
+              }))
+            : []
+          
           setFormData({
             name: p.name || "",
             description: p.description || "",
             images: Array.isArray(p.images) ? [...p.images] : [],
+            price: p.price?.toString() || "0",
+            variants: variants,
           })
         }
       } catch (error) {
@@ -81,12 +107,37 @@ export default function ReviewProductPage({ params }: { params: Promise<{ id: st
     setFormData({ ...formData, images: newImages })
   }
 
+  const handleVariantPriceChange = (variantIndex: number, newPrice: string) => {
+    const updatedVariants = [...formData.variants]
+    updatedVariants[variantIndex] = {
+      ...updatedVariants[variantIndex],
+      price: parseFloat(newPrice) || 0,
+    }
+    setFormData({ ...formData, variants: updatedVariants })
+  }
+
+  const getVariantDisplayName = (variant: Variant): string => {
+    const specs = Object.entries(variant.specifications || {})
+      .map(([key, value]) => `${key}: ${value}`)
+      .join(", ")
+    return specs || `變體 ${variant.id}`
+  }
+
   const handleSave = async (publish: boolean = false) => {
     if (!productId || saving) return
 
     setSaving(true)
 
     try {
+      // 更新 metadata 中的变体价格
+      const updatedMetadata = product?.metadata ? { ...product.metadata } : {}
+      if (formData.variants.length > 0) {
+        updatedMetadata.variants = formData.variants.map(v => ({
+          ...v,
+          price: typeof v.price === 'string' ? parseFloat(v.price) : v.price,
+        }))
+      }
+
       const response = await fetch(`/api/admin/products/${productId}`, {
         method: "PUT",
         headers: {
@@ -99,15 +150,16 @@ export default function ReviewProductPage({ params }: { params: Promise<{ id: st
           images: formData.images,
           image: formData.images[0] || null,
           importStatus: publish ? "PUBLISHED" : "DRAFT",
+          // 更新价格
+          price: parseFloat(formData.price) || 0,
           // 保留其他字段不变
           slug: product?.slug,
           category: product?.category,
-          price: product?.price,
           originalPrice: product?.originalPrice,
           sourceUrl: product?.sourceUrl,
           externalId: product?.externalId,
           isActive: product?.isActive,
-          metadata: product?.metadata,
+          metadata: updatedMetadata,
         }),
       })
 
@@ -200,8 +252,17 @@ export default function ReviewProductPage({ params }: { params: Promise<{ id: st
             </div>
 
             <div>
-              <label className="text-sm font-medium">價格</label>
-              <p className="text-lg font-bold">NT$ {parseFloat(product.price?.toString() || "0").toLocaleString()}</p>
+              <label className="text-sm font-medium">基礎價格 (TWD) *</label>
+              <Input
+                type="number"
+                step="0.01"
+                value={formData.price}
+                onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                required
+              />
+              <p className="text-sm text-muted-foreground mt-1">
+                NT$ {parseFloat(formData.price || "0").toLocaleString()}
+              </p>
             </div>
 
             <div>
@@ -253,6 +314,50 @@ export default function ReviewProductPage({ params }: { params: Promise<{ id: st
           </CardContent>
         </Card>
       </div>
+
+      {/* 變體管理 */}
+      {formData.variants.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>商品變體</CardTitle>
+            <CardDescription>編輯每個變體的價格</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {formData.variants.map((variant, index) => (
+                <div key={variant.id} className="border rounded-lg p-4 space-y-3">
+                  <div>
+                    <label className="text-sm font-medium">變體規格</label>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {getVariantDisplayName(variant)}
+                    </p>
+                    {variant.sku && (
+                      <p className="text-xs text-muted-foreground mt-1">SKU: {variant.sku}</p>
+                    )}
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium">變體價格 (TWD) *</label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={typeof variant.price === 'string' ? variant.price : variant.price.toString()}
+                      onChange={(e) => handleVariantPriceChange(index, e.target.value)}
+                      required
+                    />
+                    <p className="text-sm text-muted-foreground mt-1">
+                      NT$ {parseFloat(
+                        typeof variant.price === 'string' 
+                          ? variant.price 
+                          : variant.price.toString()
+                      ).toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* 操作按鈕 */}
       <div className="flex justify-end gap-4">
