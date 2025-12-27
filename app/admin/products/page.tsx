@@ -48,15 +48,36 @@ export default function ProductsPage() {
       const response = await fetch(`/api/admin/products?${params}`, {
         credentials: 'include', // 确保发送 cookie
       })
+      
       const data = await response.json()
 
+      console.log('[PRODUCTS] API Response:', {
+        success: data.success,
+        hasData: !!data.data,
+        dataLength: data.data?.length,
+        pagination: data.pagination,
+        status: response.status
+      })
+
       if (data.success) {
-        setProducts(data.data)
-        setTotalPages(data.pagination.totalPages)
-        setTotalProducts(data.pagination.total)
+        setProducts(data.data || [])
+        setTotalPages(data.pagination?.totalPages || 1)
+        setTotalProducts(data.pagination?.total || 0)
+      } else {
+        console.error("獲取商品列表失敗:", data.error || data)
+        alert(data.error || "無法獲取商品列表")
+        // 即使失败也重置状态
+        setProducts([])
+        setTotalPages(1)
+        setTotalProducts(0)
       }
     } catch (error) {
       console.error("獲取商品列表錯誤:", error)
+      alert("無法連接到伺服器，請檢查網路連線")
+      // 发生错误时重置状态
+      setProducts([])
+      setTotalPages(1)
+      setTotalProducts(0)
     } finally {
       setLoading(false)
     }

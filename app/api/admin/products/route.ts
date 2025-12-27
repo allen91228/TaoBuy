@@ -75,6 +75,17 @@ export async function GET(request: NextRequest) {
       prisma.product.count({ where }),
     ])
 
+    // #region agent log
+    console.log('[API] GET /api/admin/products - Response', {
+      productsCount: products.length,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+      whereCondition: where
+    })
+    // #endregion
+
     return NextResponse.json({
       success: true,
       data: products,
