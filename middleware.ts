@@ -14,6 +14,10 @@ const isPublicRoute = createRouteMatcher([
   "/api/admin/import-product(.*)", // 👈 加入這一行，這是關鍵！
   '/api/admin/auth/login', // 後台登入 API 為公開
   '/api/admin/auth/logout', // 後台登出 API 為公開
+  '/api/admin/products(.*)', // 後台商品管理 API 使用 API_SECRET 驗證，不需要 Clerk 保護
+  '/api/admin/orders(.*)', // 後台訂單管理 API 使用 API_SECRET 驗證，不需要 Clerk 保護
+  '/api/admin/users(.*)', // 後台用戶管理 API 使用 API_SECRET 驗證，不需要 Clerk 保護
+  '/api/admin/stats(.*)', // 後台統計 API 使用 API_SECRET 驗證，不需要 Clerk 保護
   '/admin(.*)', // 後台路由使用 API_SECRET 驗證，不需要 Clerk 保護
   '/admin-login', // 後台登入頁面為公開
 ])
