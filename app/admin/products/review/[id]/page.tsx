@@ -72,27 +72,51 @@ export default function ReviewProductPage({ params }: { params: Promise<{ id: st
           const p = data.data
           setProduct(p)
           
-          // 调试日志
+          // 调试日志 - 详细检查 metadata 结构
           console.log('[REVIEW] Product metadata:', p.metadata)
-          console.log('[REVIEW] Variants from metadata:', p.metadata?.variants)
+          console.log('[REVIEW] Metadata type:', typeof p.metadata)
+          console.log('[REVIEW] Metadata is null?', p.metadata === null)
+          console.log('[REVIEW] Metadata is undefined?', p.metadata === undefined)
+          
+          // 处理 metadata 可能是字符串的情况
+          let metadataObj: any = p.metadata
+          if (typeof p.metadata === 'string') {
+            try {
+              metadataObj = JSON.parse(p.metadata)
+              console.log('[REVIEW] Parsed metadata from string:', metadataObj)
+            } catch (e) {
+              console.error('[REVIEW] Failed to parse metadata string:', e)
+              metadataObj = null
+            }
+          }
+          
+          console.log('[REVIEW] Variants from metadata:', metadataObj?.variants)
+          console.log('[REVIEW] Variants type:', typeof metadataObj?.variants)
+          console.log('[REVIEW] Variants is array?', Array.isArray(metadataObj?.variants))
           
           // 解析变体数据 - 改进解析逻辑
           let variants: Variant[] = []
-          if (p.metadata?.variants && Array.isArray(p.metadata.variants)) {
-            variants = p.metadata.variants
+          if (metadataObj?.variants && Array.isArray(metadataObj.variants)) {
+            console.log('[REVIEW] Processing variants array, length:', metadataObj.variants.length)
+            variants = metadataObj.variants
               .filter((v: any) => v !== null && v !== undefined) // 过滤掉 null/undefined
-              .map((v: any, index: number) => ({
-                id: v.id || `variant-${Date.now()}-${index}`,
-                specifications: v.specifications && typeof v.specifications === 'object' 
-                  ? v.specifications 
-                  : {},
-                price: v.price !== null && v.price !== undefined
-                  ? (typeof v.price === 'string' ? parseFloat(v.price) : v.price)
-                  : 0,
-                sku: v.sku || null,
-                image: v.image || null,
-                images: v.images && Array.isArray(v.images) ? v.images : undefined,
-              }))
+              .map((v: any, index: number) => {
+                console.log(`[REVIEW] Processing variant ${index}:`, v)
+                return {
+                  id: v.id || `variant-${Date.now()}-${index}`,
+                  specifications: v.specifications && typeof v.specifications === 'object' 
+                    ? v.specifications 
+                    : {},
+                  price: v.price !== null && v.price !== undefined
+                    ? (typeof v.price === 'string' ? parseFloat(v.price) : v.price)
+                    : 0,
+                  sku: v.sku || null,
+                  image: v.image || null,
+                  images: v.images && Array.isArray(v.images) ? v.images : undefined,
+                }
+              })
+          } else {
+            console.log('[REVIEW] No variants found or not an array')
           }
           
           console.log('[REVIEW] Parsed variants:', variants)
@@ -145,8 +169,21 @@ export default function ReviewProductPage({ params }: { params: Promise<{ id: st
     setSaving(true)
 
     try {
+      // 处理 metadata - 可能是字符串或对象
+      let metadataObj: any = product?.metadata
+      if (typeof product?.metadata === 'string') {
+        try {
+          metadataObj = JSON.parse(product.metadata)
+        } catch (e) {
+          console.error('[REVIEW] Failed to parse metadata:', e)
+          metadataObj = {}
+        }
+      } else if (!metadataObj) {
+        metadataObj = {}
+      }
+      
       // 更新 metadata 中的变体数据（包括规格和价格）
-      const updatedMetadata = product?.metadata ? { ...product.metadata } : {}
+      const updatedMetadata = { ...metadataObj }
       if (formData.variants.length > 0) {
         updatedMetadata.variants = formData.variants.map(v => ({
           ...v,
@@ -154,7 +191,12 @@ export default function ReviewProductPage({ params }: { params: Promise<{ id: st
           specifications: v.specifications || {},
           sku: v.sku || null,
         }))
+      } else {
+        // 如果没有变体，确保 variants 字段存在（即使是空数组）
+        updatedMetadata.variants = []
       }
+      
+      console.log('[REVIEW] Updated metadata:', updatedMetadata)
 
       const response = await fetch(`/api/admin/products/${productId}`, {
         method: "PUT",
