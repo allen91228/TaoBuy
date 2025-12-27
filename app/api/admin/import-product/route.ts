@@ -119,6 +119,8 @@ export async function POST(request: NextRequest) {
       update: {
         ...productData,
         updatedAt: new Date(),
+        // 修正：強制轉型 metadata 以通過 Prisma 的嚴格檢查
+        metadata: (productData.metadata || {}) as any,
       },
       create: productData,
     })
