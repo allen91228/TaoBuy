@@ -2,6 +2,7 @@ import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server'
 
 // 定義哪些路徑是公開的（不需登入即可訪問）
 // 注意：我們包含 '/api/admin/import-product' 讓它繞過 Clerk 的自動轉址
+// 後台路由使用 API_SECRET 驗證，不需要 Clerk 保護
 const isPublicRoute = createRouteMatcher([
   '/',
   '/products(.*)',
@@ -11,6 +12,7 @@ const isPublicRoute = createRouteMatcher([
   '/api/webhooks(.*)',
   '/api/products(.*)', // 👈 添加 API products 路由為公開
   "/api/admin/import-product(.*)", // 👈 加入這一行，這是關鍵！
+  '/admin(.*)', // 後台路由使用 API_SECRET 驗證，不需要 Clerk 保護
 ])
 
 export default clerkMiddleware((auth, req) => {

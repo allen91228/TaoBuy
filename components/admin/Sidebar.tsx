@@ -2,10 +2,9 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { LayoutDashboard, Package, ShoppingBag, Users, LogOut } from "lucide-react"
+import { LayoutDashboard, Package, ShoppingBag, Users } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import { SignOutButton } from "@clerk/nextjs"
 
 const navigation = [
   { name: "儀表板", href: "/admin", icon: LayoutDashboard },
@@ -45,14 +44,6 @@ export function Sidebar() {
         })}
       </nav>
 
-      <div className="border-t p-4">
-        <SignOutButton>
-          <Button variant="ghost" className="w-full justify-start">
-            <LogOut className="mr-2 h-4 w-4" />
-            登出
-          </Button>
-        </SignOutButton>
-      </div>
     </div>
   )
 }

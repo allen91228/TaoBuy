@@ -1,13 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { requireAdmin } from '@/lib/admin-auth'
+import { checkApiSecretAuth } from '@/lib/api-secret-auth'
 import { ImportStatus } from '@prisma/client'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
   try {
-    await requireAdmin()
+    if (!checkApiSecretAuth(request)) {
+      return NextResponse.json(
+        { error: '未授權：API Secret 不正確' },
+        { status: 401 }
+      )
+    }
 
     const searchParams = request.nextUrl.searchParams
     const page = parseInt(searchParams.get('page') || '1')
@@ -83,7 +88,12 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    await requireAdmin()
+    if (!checkApiSecretAuth(request)) {
+      return NextResponse.json(
+        { error: '未授權：API Secret 不正確' },
+        { status: 401 }
+      )
+    }
 
     const body = await request.json()
 

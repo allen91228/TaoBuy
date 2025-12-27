@@ -1,4 +1,3 @@
-import { requireAdmin } from "@/lib/admin-auth"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Package, ShoppingBag, Users, DollarSign } from "lucide-react"
 import Link from "next/link"
@@ -106,8 +105,6 @@ async function getStats() {
 }
 
 export default async function AdminDashboard() {
-  await requireAdmin()
-  
   const stats = await getStats()
 
   const formatPrice = (price: string): string => {

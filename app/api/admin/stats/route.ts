@@ -1,14 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { requireAdmin } from '@/lib/admin-auth'
+import { checkApiSecretAuth } from '@/lib/api-secret-auth'
 import { ImportStatus, OrderStatus } from '@prisma/client'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
   try {
-    // 检查管理员权限
-    await requireAdmin()
+    // 检查 API_SECRET 认证
+    if (!checkApiSecretAuth(request)) {
+      return NextResponse.json(
+        { error: '未授權：API Secret 不正確' },
+        { status: 401 }
+      )
+    }
 
     // 获取统计数据
     const [
