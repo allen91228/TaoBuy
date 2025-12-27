@@ -172,6 +172,12 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
         setCurrentPrice(matchedVariant.price)
         // 當選擇變體時，重置圖片索引
         setSelectedImage(0)
+        // 强制触发图片更新
+        if (matchedVariant.images && matchedVariant.images.length > 0) {
+          // 变体有图片，会通过 getDisplayImages 自动切换
+        } else if (matchedVariant.image) {
+          // 变体有单张图片，会通过 getDisplayImages 自动切换
+        }
       } else {
         // 沒有匹配的變體，使用最便宜的變體價格
         if (variants.length > 0) {
@@ -204,33 +210,13 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
     }
   }, [selectedSpecifications, product])
 
-  // 當圖片列表改變時，確保 selectedImage 不會超出範圍
+  // 當變體改變時，重置圖片索引並確保圖片正確顯示
   useEffect(() => {
     if (!product) return
     
-    // 計算當前應該顯示的圖片列表
-    let images: string[] = []
-    if (currentVariant) {
-      if (currentVariant.images && currentVariant.images.length > 0) {
-        images = currentVariant.images
-      } else if (currentVariant.image) {
-        images = [currentVariant.image]
-      }
-    }
-    
-    if (images.length === 0) {
-      if (product.images && product.images.length > 0) {
-        images = product.images
-      } else if (product.image) {
-        images = [product.image]
-      }
-    }
-    
-    // 如果當前選中的圖片索引超出範圍，重置為 0
-    if (selectedImage >= images.length && images.length > 0) {
-      setSelectedImage(0)
-    }
-  }, [currentVariant, product, selectedImage])
+    // 當變體改變時，重置圖片索引為 0
+    setSelectedImage(0)
+  }, [currentVariant?.id, product])
 
   // 處理規格選擇：再次點擊相同選項時取消選擇
   const handleSpecificationChange = (specKey: string, value: string) => {
