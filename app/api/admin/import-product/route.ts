@@ -4,10 +4,8 @@ import { prisma } from '@/lib/prisma'
 import { generateSlug, extractExternalIdFromUrl } from '@/lib/slug'
 import { ImportStatus } from '@prisma/client'
 
-// 強制動態執行，不使用靜態優化
+// 強制動態執行，避免 Vercel Build Error (Failed to collect page data)
 export const dynamic = 'force-dynamic'
-export const runtime = 'nodejs'
-export const fetchCache = 'force-no-store'
 
 // 請求 Body 類型定義
 interface ImportProductRequest {
