@@ -4,6 +4,9 @@ import { prisma } from '@/lib/prisma'
 import { generateSlug, extractExternalIdFromUrl } from '@/lib/slug'
 import { ImportStatus } from '@prisma/client'
 
+// 強制動態執行，不使用靜態優化
+export const dynamic = 'force-dynamic'
+
 // 請求 Body 類型定義
 interface ImportProductRequest {
   sourceUrl: string // 淘寶網址
