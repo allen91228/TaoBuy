@@ -12,6 +12,8 @@ const isPublicRoute = createRouteMatcher([
   '/api/webhooks(.*)',
   '/api/products(.*)', // 👈 添加 API products 路由為公開
   "/api/admin/import-product(.*)", // 👈 加入這一行，這是關鍵！
+  '/api/admin/auth/login', // 後台登入 API 為公開
+  '/api/admin/auth/logout', // 後台登出 API 為公開
   '/admin(.*)', // 後台路由使用 API_SECRET 驗證，不需要 Clerk 保護
   '/admin-login', // 後台登入頁面為公開
 ])
