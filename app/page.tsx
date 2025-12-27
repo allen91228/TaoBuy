@@ -229,7 +229,8 @@ export default function Home() {
                         alt={product.name}
                         fill
                         className="object-cover hover:scale-105 transition-transform duration-300"
-                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                        sizes="(max-width: 640px) 400px, (max-width: 1024px) 300px, 250px"
+                        quality={65}
                         priority={index < 4}
                         loading={index < 4 ? undefined : 'lazy'}
                       />
