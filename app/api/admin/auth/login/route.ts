@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { verifyApiSecret, setApiSecretCookie } from '@/lib/api-secret-auth'
+import { verifyApiSecret } from '@/lib/api-secret-auth'
 
 export const dynamic = 'force-dynamic'
 
@@ -7,6 +7,10 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     const { secret } = body
+
+    // #region agent log
+    console.log('[LOGIN] Received login request', { hasSecret: !!secret, secretLength: secret?.length })
+    // #endregion
 
     if (!secret) {
       return NextResponse.json(
@@ -16,24 +20,52 @@ export async function POST(request: NextRequest) {
     }
 
     // 驗證 API_SECRET
-    if (!verifyApiSecret(secret)) {
+    const isValid = verifyApiSecret(secret)
+    // #region agent log
+    console.log('[LOGIN] Secret verification', { isValid, secretLength: secret.length, expectedLength: process.env.API_SECRET?.length || 'default'.length })
+    // #endregion
+
+    if (!isValid) {
+      // #region agent log
+      console.log('[LOGIN] Secret verification failed', { 
+        received: secret.substring(0, 10) + '...',
+        expected: process.env.API_SECRET?.substring(0, 10) + '...' || 'default'.substring(0, 10) + '...'
+      })
+      // #endregion
       return NextResponse.json(
         { error: 'API Secret 不正確' },
         { status: 401 }
       )
     }
 
-    // 設置 cookie
-    await setApiSecretCookie(secret)
-    
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/aee0e817-0704-4436-8dbf-1c0e88679cb4',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app/api/admin/auth/login/route.ts:28',message:'Cookie set successfully',data:{secretLength:secret.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{})
-    // #endregion
-
-    return NextResponse.json({
+    // 創建響應並設置 cookie
+    const isProduction = process.env.NODE_ENV === 'production'
+    const response = NextResponse.json({
       success: true,
       message: '登入成功',
     })
+
+    // 使用 NextResponse 設置 cookie（這是正確的方式）
+    response.cookies.set('admin-api-secret', secret, {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 7, // 7 天
+      path: '/',
+    })
+
+    // #region agent log
+    console.log('[LOGIN] Cookie set in response', { 
+      cookieName: 'admin-api-secret',
+      secure: isProduction,
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 60 * 60 * 24 * 7,
+      isProduction
+    })
+    // #endregion
+
+    return response
   } catch (error) {
     console.error('登入錯誤:', error)
     return NextResponse.json(

@@ -43,7 +43,12 @@ export async function getApiSecretFromCookie(): Promise<string | null> {
   const cookieStore = await cookies()
   const secret = cookieStore.get(ADMIN_SECRET_COOKIE)?.value || null
   // #region agent log
-  fetch('http://127.0.0.1:7242/ingest/aee0e817-0704-4436-8dbf-1c0e88679cb4',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'lib/api-secret-auth.ts:45',message:'Reading cookie',data:{hasSecret:!!secret,secretLength:secret?.length||0},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{})
+  console.log('[AUTH] Reading cookie', { 
+    cookieName: ADMIN_SECRET_COOKIE,
+    hasSecret: !!secret,
+    secretLength: secret?.length || 0,
+    allCookies: Array.from(cookieStore.getAll()).map(c => c.name)
+  })
   // #endregion
   return secret
 }
@@ -55,7 +60,13 @@ export async function isAdminAuthenticated(): Promise<boolean> {
   const secret = await getApiSecretFromCookie()
   const isValid = verifyApiSecret(secret)
   // #region agent log
-  fetch('http://127.0.0.1:7242/ingest/aee0e817-0704-4436-8dbf-1c0e88679cb4',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'lib/api-secret-auth.ts:54',message:'Auth verification',data:{hasSecret:!!secret,isValid,expectedSecret:API_SECRET.substring(0,10)+'...'},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{})
+  console.log('[AUTH] Verification result', {
+    hasSecret: !!secret,
+    isValid,
+    secretPreview: secret ? secret.substring(0, 10) + '...' : null,
+    expectedPreview: API_SECRET.substring(0, 10) + '...',
+    secretMatch: secret === API_SECRET
+  })
   // #endregion
   return isValid
 }
@@ -65,13 +76,30 @@ export async function isAdminAuthenticated(): Promise<boolean> {
  */
 export async function setApiSecretCookie(secret: string): Promise<void> {
   const cookieStore = await cookies()
+  const isProduction = process.env.NODE_ENV === 'production'
+  
+  // #region agent log
+  console.log('[AUTH] Setting cookie', {
+    cookieName: ADMIN_SECRET_COOKIE,
+    secretLength: secret.length,
+    secure: isProduction,
+    sameSite: 'lax',
+    path: '/',
+    maxAge: 60 * 60 * 24 * 7
+  })
+  // #endregion
+
   cookieStore.set(ADMIN_SECRET_COOKIE, secret, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: isProduction,
     sameSite: 'lax',
     maxAge: 60 * 60 * 24 * 7, // 7 天
     path: '/',
   })
+
+  // #region agent log
+  console.log('[AUTH] Cookie set completed')
+  // #endregion
 }
 
 /**

@@ -29,10 +29,16 @@ export default function AdminLoginPage() {
 
       const data = await response.json()
 
+      console.log('[CLIENT] Login response', { success: data.success, error: data.error })
+
       if (data.success) {
+        console.log('[CLIENT] Login successful, redirecting to /admin')
+        // 等待一小段时间确保 cookie 已设置
+        await new Promise(resolve => setTimeout(resolve, 100))
         router.push("/admin")
         router.refresh()
       } else {
+        console.log('[CLIENT] Login failed', { error: data.error })
         setError(data.error || "登入失敗")
       }
     } catch (err) {

@@ -9,22 +9,26 @@ export default async function AdminLayout({
   children: React.ReactNode
 }) {
   // #region agent log
-  fetch('http://127.0.0.1:7242/ingest/aee0e817-0704-4436-8dbf-1c0e88679cb4',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app/admin/layout.tsx:11',message:'AdminLayout entry',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{})
+  console.log('[LAYOUT] AdminLayout entry - checking authentication')
   // #endregion
 
   // 检查 API_SECRET 认证
   const authenticated = await isAdminAuthenticated()
   
   // #region agent log
-  fetch('http://127.0.0.1:7242/ingest/aee0e817-0704-4436-8dbf-1c0e88679cb4',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app/admin/layout.tsx:17',message:'Auth check result',data:{authenticated},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{})
+  console.log('[LAYOUT] Authentication check result', { authenticated })
   // #endregion
 
   if (!authenticated) {
     // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/aee0e817-0704-4436-8dbf-1c0e88679cb4',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app/admin/layout.tsx:22',message:'Redirecting to login',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{})
+    console.log('[LAYOUT] Not authenticated, redirecting to login')
     // #endregion
     redirect("/admin-login")
   }
+
+  // #region agent log
+  console.log('[LAYOUT] Authenticated, rendering admin layout')
+  // #endregion
 
   return (
     <div className="flex h-screen overflow-hidden">
