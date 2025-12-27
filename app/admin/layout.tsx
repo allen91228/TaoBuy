@@ -23,7 +23,7 @@ export default async function AdminLayout({
     // #region agent log
     fetch('http://127.0.0.1:7242/ingest/aee0e817-0704-4436-8dbf-1c0e88679cb4',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app/admin/layout.tsx:22',message:'Redirecting to login',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{})
     // #endregion
-    redirect("/admin/login")
+    redirect("/admin-login")
   }
 
   return (
