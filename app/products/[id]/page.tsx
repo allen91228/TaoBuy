@@ -205,6 +205,7 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
         setSelectedImage(0)
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedSpecifications, product])
 
   // 當變體改變時，重置圖片索引並確保圖片正確顯示
@@ -219,7 +220,7 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
     
     // 當變體改變時，重置圖片索引為 0
     setSelectedImage(0)
-  }, [currentVariant?.id, product])
+  }, [currentVariant, product])
 
   // 處理規格選擇：再次點擊相同選項時取消選擇
   const handleSpecificationChange = (specKey: string, value: string) => {
@@ -237,6 +238,39 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
       }
     })
   }
+
+  // 合併所有圖片：優先使用商品默認圖片，只有當買家選擇變體且變體有圖片時，才切換到變體圖片
+  // 使用 useMemo 確保在 currentVariant 或 product 變化時重新計算
+  // 必須在 early return 之前调用
+  const allImages = useMemo(() => {
+    // 如果有選中的變體且變體有圖片，使用變體圖片
+    if (currentVariant) {
+      if (currentVariant.images && Array.isArray(currentVariant.images) && currentVariant.images.length > 0) {
+        console.log('[PRODUCT] Using variant images array:', currentVariant.images)
+        return currentVariant.images
+      }
+      if (currentVariant.image) {
+        console.log('[PRODUCT] Using variant single image:', currentVariant.image)
+        return [currentVariant.image]
+      }
+      console.log('[PRODUCT] Variant has no images, using product images')
+    }
+    
+    // 優先使用商品 images 陣列
+    if (product?.images && product.images.length > 0) {
+      console.log('[PRODUCT] Using product images array:', product.images)
+      return product.images
+    }
+    // 如果沒有 images 陣列，使用 image 主圖
+    if (product?.image) {
+      console.log('[PRODUCT] Using product single image:', product.image)
+      return [product.image]
+    }
+    console.log('[PRODUCT] No images found')
+    return []
+  }, [currentVariant, product])
+  
+  console.log('[PRODUCT] All images to display:', allImages)
 
   if (loading) {
     return (
@@ -258,7 +292,7 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
       .replace(/\*\*(.*?)\*\*/g, '$1') // 移除 **粗体**
       .replace(/__(.*?)__/g, '$1') // 移除 __粗体__
       .replace(/\*(.*?)\*/g, '$1') // 移除 *斜体*
-      .replace(/_(.*?)_/g, '$1') // 移除 _斜体_
+      .replace(/_(.*?)_/g, '$1') // 移除 _斜体__
       .replace(/~~(.*?)~~/g, '$1') // 移除 ~~删除线~~
       .replace(/`(.*?)`/g, '$1') // 移除 `代码`
       .replace(/\[(.*?)\]\(.*?\)/g, '$1') // 移除链接，只保留文本
@@ -308,38 +342,6 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
       setQuantity(quantity - 1)
     }
   }
-
-  // 合併所有圖片：優先使用商品默認圖片，只有當買家選擇變體且變體有圖片時，才切換到變體圖片
-  // 使用 useMemo 確保在 currentVariant 或 product 變化時重新計算
-  const allImages = useMemo(() => {
-    // 如果有選中的變體且變體有圖片，使用變體圖片
-    if (currentVariant) {
-      if (currentVariant.images && Array.isArray(currentVariant.images) && currentVariant.images.length > 0) {
-        console.log('[PRODUCT] Using variant images array:', currentVariant.images)
-        return currentVariant.images
-      }
-      if (currentVariant.image) {
-        console.log('[PRODUCT] Using variant single image:', currentVariant.image)
-        return [currentVariant.image]
-      }
-      console.log('[PRODUCT] Variant has no images, using product images')
-    }
-    
-    // 優先使用商品 images 陣列
-    if (product?.images && product.images.length > 0) {
-      console.log('[PRODUCT] Using product images array:', product.images)
-      return product.images
-    }
-    // 如果沒有 images 陣列，使用 image 主圖
-    if (product?.image) {
-      console.log('[PRODUCT] Using product single image:', product.image)
-      return [product.image]
-    }
-    console.log('[PRODUCT] No images found')
-    return []
-  }, [currentVariant, product])
-  
-  console.log('[PRODUCT] All images to display:', allImages)
 
   // 確保 selectedImage 不會超出範圍
   const currentImageIndex = Math.min(selectedImage, allImages.length - 1)
@@ -477,8 +479,14 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
                   a: ({ ...props }: any) => (
                     <a className="text-primary hover:underline" target="_blank" rel="noopener noreferrer" {...props} />
                   ),
-                  img: ({ ...props }: any) => (
-                    <img className="rounded-lg my-4 max-w-full" {...props} />
+                  img: ({ src, alt, ...props }: any) => (
+                    <Image 
+                      src={src || ''} 
+                      alt={alt || ''} 
+                      width={800} 
+                      height={600} 
+                      className="rounded-lg my-4 max-w-full" 
+                    />
                   ),
                 }}
               >
