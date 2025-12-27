@@ -205,12 +205,21 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
     }
   }, [currentVariant, product, selectedImage])
 
-  // 處理規格選擇
+  // 處理規格選擇：再次點擊相同選項時取消選擇
   const handleSpecificationChange = (specKey: string, value: string) => {
-    setSelectedSpecifications((prev) => ({
-      ...prev,
-      [specKey]: value,
-    }))
+    setSelectedSpecifications((prev) => {
+      // 如果點擊的是已經選中的選項，則取消選擇
+      if (prev[specKey] === value) {
+        const newSpecs = { ...prev }
+        delete newSpecs[specKey]
+        return newSpecs
+      }
+      // 否則設置為選中的值
+      return {
+        ...prev,
+        [specKey]: value,
+      }
+    })
   }
 
   if (loading) {
