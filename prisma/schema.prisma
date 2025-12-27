@@ -1,0 +1,155 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User model - 與 Clerk 整合，包含基本會員資料與角色
+model User {
+  id            String    @id @default(cuid())
+  clerkId       String    @unique // Clerk user ID
+  email         String    @unique
+  name          String?
+  image         String?
+  role          UserRole  @default(CUSTOMER) // 用戶角色：Admin 或 Customer
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  // 關聯
+  orders        Order[]
+  cart          Cart?
+  addresses     Address[]
+}
+
+// 用戶角色枚舉
+enum UserRole {
+  ADMIN
+  CUSTOMER
+}
+
+// 地址模型
+model Address {
+  id            String    @id @default(cuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fullName      String
+  phone         String
+  address       String
+  city          String
+  postalCode    String
+  country       String    @default("TW")
+  isDefault     Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+// 商品模型 - 核心模型，包含自動化匯入介面
+model Product {
+  id            String      @id @default(cuid())
+  name          String      // 商品標題
+  slug          String      @unique
+  description   String?     // 商品描述
+  image         String?     // 主圖
+  images        String[]    // 多張圖片 URL
+  category      String?
+  stock         Int         @default(0) // 庫存數量
+  price         Decimal     @db.Decimal(10, 2) // 本地售價 (TWD)
+  isActive      Boolean     @default(true)
+  
+  // 自動化匯入相關欄位
+  sourceUrl     String?     // 淘寶的原始商品連結
+  externalId    String?     @unique // 淘寶的商品 ID，用於防止重複匯入
+  originalPrice Decimal?    @db.Decimal(10, 2) // 原始人民幣價格
+  importStatus  ImportStatus @default(DRAFT) // 匯入狀態
+  metadata      Json?       // 用來儲存淘寶那邊不固定的詳細規格數據
+  
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  
+  // 關聯
+  orderItems    OrderItem[]
+  cartItems     CartItem[]
+  
+  @@index([externalId])
+  @@index([importStatus])
+}
+
+// 匯入狀態枚舉
+enum ImportStatus {
+  DRAFT         // 草稿狀態
+  PUBLISHED     // 已發布
+  SYNC_ERROR    // 同步錯誤
+}
+
+// 購物車模型
+model Cart {
+  id            String    @id @default(cuid())
+  userId        String    @unique
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items         CartItem[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+// 購物車項目
+model CartItem {
+  id            String    @id @default(cuid())
+  cartId        String
+  cart          Cart      @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  productId     String
+  product       Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  quantity      Int       @default(1)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@unique([cartId, productId])
+}
+
+// 訂單模型
+model Order {
+  id            String    @id @default(cuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orderNumber   String    @unique
+  status        OrderStatus @default(PENDING)
+  total         Decimal   @db.Decimal(10, 2)
+  shippingAddress String
+  paymentMethod String?
+  paymentStatus PaymentStatus @default(PENDING)
+  items         OrderItem[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+// 訂單項目 - Product 與 Order 的關聯表
+model OrderItem {
+  id            String    @id @default(cuid())
+  orderId       String
+  order         Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId     String
+  product       Product   @relation(fields: [productId], references: [id])
+  quantity      Int
+  price         Decimal   @db.Decimal(10, 2) // 下單時的價格
+  createdAt     DateTime  @default(now())
+}
+
+enum OrderStatus {
+  PENDING
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
