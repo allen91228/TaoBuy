@@ -2,7 +2,7 @@
 
 import { notFound } from "next/navigation"
 import Image from "next/image"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { useCartStore } from "@/store/cart-store"
 import { ShoppingCart, Plus, Minus } from "lucide-react"
@@ -104,7 +104,7 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
       price: typeof v.price === 'string' ? parseFloat(v.price) : v.price,
       sku: v.sku ?? null,
       image: v.image ?? null,
-      images: v.images && Array.isArray(v.images) ? v.images : undefined,
+      images: v.images && Array.isArray(v.images) && v.images.length > 0 ? v.images : undefined,
     }))
   }
 
@@ -168,16 +168,13 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
       })
 
       if (matchedVariant) {
+        console.log('[PRODUCT] Matched variant:', matchedVariant)
+        console.log('[PRODUCT] Variant images:', matchedVariant.images)
+        console.log('[PRODUCT] Variant image:', matchedVariant.image)
         setCurrentVariant(matchedVariant)
         setCurrentPrice(matchedVariant.price)
         // 當選擇變體時，重置圖片索引
         setSelectedImage(0)
-        // 强制触发图片更新
-        if (matchedVariant.images && matchedVariant.images.length > 0) {
-          // 变体有图片，会通过 getDisplayImages 自动切换
-        } else if (matchedVariant.image) {
-          // 变体有单张图片，会通过 getDisplayImages 自动切换
-        }
       } else {
         // 沒有匹配的變體，使用最便宜的變體價格
         if (variants.length > 0) {
@@ -213,6 +210,12 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
   // 當變體改變時，重置圖片索引並確保圖片正確顯示
   useEffect(() => {
     if (!product) return
+    
+    console.log('[PRODUCT] Current variant changed:', currentVariant)
+    if (currentVariant) {
+      console.log('[PRODUCT] Variant has images:', currentVariant.images)
+      console.log('[PRODUCT] Variant has image:', currentVariant.image)
+    }
     
     // 當變體改變時，重置圖片索引為 0
     setSelectedImage(0)
@@ -307,29 +310,36 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
   }
 
   // 合併所有圖片：優先使用商品默認圖片，只有當買家選擇變體且變體有圖片時，才切換到變體圖片
-  const getDisplayImages = (): string[] => {
+  // 使用 useMemo 確保在 currentVariant 或 product 變化時重新計算
+  const allImages = useMemo(() => {
     // 如果有選中的變體且變體有圖片，使用變體圖片
     if (currentVariant) {
-      if (currentVariant.images && currentVariant.images.length > 0) {
+      if (currentVariant.images && Array.isArray(currentVariant.images) && currentVariant.images.length > 0) {
+        console.log('[PRODUCT] Using variant images array:', currentVariant.images)
         return currentVariant.images
       }
       if (currentVariant.image) {
+        console.log('[PRODUCT] Using variant single image:', currentVariant.image)
         return [currentVariant.image]
       }
+      console.log('[PRODUCT] Variant has no images, using product images')
     }
     
     // 優先使用商品 images 陣列
-    if (product.images && product.images.length > 0) {
+    if (product?.images && product.images.length > 0) {
+      console.log('[PRODUCT] Using product images array:', product.images)
       return product.images
     }
     // 如果沒有 images 陣列，使用 image 主圖
-    if (product.image) {
+    if (product?.image) {
+      console.log('[PRODUCT] Using product single image:', product.image)
       return [product.image]
     }
+    console.log('[PRODUCT] No images found')
     return []
-  }
+  }, [currentVariant, product])
   
-  const allImages = getDisplayImages()
+  console.log('[PRODUCT] All images to display:', allImages)
 
   // 確保 selectedImage 不會超出範圍
   const currentImageIndex = Math.min(selectedImage, allImages.length - 1)

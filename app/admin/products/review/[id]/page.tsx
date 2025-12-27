@@ -72,17 +72,31 @@ export default function ReviewProductPage({ params }: { params: Promise<{ id: st
           const p = data.data
           setProduct(p)
           
-          // 解析变体数据
-          const variants: Variant[] = p.metadata?.variants 
-            ? p.metadata.variants.map((v: any) => ({
-                id: v.id || `variant-${Date.now()}-${Math.random()}`,
-                specifications: v.specifications || {},
-                price: typeof v.price === 'string' ? parseFloat(v.price) : v.price,
+          // 调试日志
+          console.log('[REVIEW] Product metadata:', p.metadata)
+          console.log('[REVIEW] Variants from metadata:', p.metadata?.variants)
+          
+          // 解析变体数据 - 改进解析逻辑
+          let variants: Variant[] = []
+          if (p.metadata?.variants && Array.isArray(p.metadata.variants)) {
+            variants = p.metadata.variants
+              .filter((v: any) => v !== null && v !== undefined) // 过滤掉 null/undefined
+              .map((v: any, index: number) => ({
+                id: v.id || `variant-${Date.now()}-${index}`,
+                specifications: v.specifications && typeof v.specifications === 'object' 
+                  ? v.specifications 
+                  : {},
+                price: v.price !== null && v.price !== undefined
+                  ? (typeof v.price === 'string' ? parseFloat(v.price) : v.price)
+                  : 0,
                 sku: v.sku || null,
                 image: v.image || null,
                 images: v.images && Array.isArray(v.images) ? v.images : undefined,
               }))
-            : []
+          }
+          
+          console.log('[REVIEW] Parsed variants:', variants)
+          console.log('[REVIEW] Variants count:', variants.length)
           
           setFormData({
             name: p.name || "",
@@ -91,6 +105,8 @@ export default function ReviewProductPage({ params }: { params: Promise<{ id: st
             price: p.price?.toString() || "0",
             variants: variants,
           })
+          
+          console.log('[REVIEW] FormData variants:', variants)
         }
       } catch (error) {
         console.error("獲取商品錯誤:", error)
@@ -317,14 +333,23 @@ export default function ReviewProductPage({ params }: { params: Promise<{ id: st
         </Card>
       </div>
 
-      {/* 變體管理 */}
-      {formData.variants.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>商品變體</CardTitle>
-            <CardDescription>編輯每個變體的規格和價格</CardDescription>
-          </CardHeader>
-          <CardContent>
+      {/* 變體管理 - 始终显示 */}
+      <Card>
+        <CardHeader>
+          <CardTitle>商品變體</CardTitle>
+          <CardDescription>編輯每個變體的規格和價格</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {formData.variants.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-sm text-muted-foreground mb-4">
+                尚無變體數據
+              </p>
+              <p className="text-xs text-muted-foreground">
+                變體數據存儲在商品的 metadata.variants 中
+              </p>
+            </div>
+          ) : (
             <div className="space-y-6">
               {formData.variants.map((variant, variantIndex) => (
                 <div key={variant.id} className="border rounded-lg p-4 space-y-4">
@@ -448,9 +473,9 @@ export default function ReviewProductPage({ params }: { params: Promise<{ id: st
                 </div>
               ))}
             </div>
-          </CardContent>
-        </Card>
-      )}
+          )}
+        </CardContent>
+      </Card>
 
       {/* 操作按鈕 */}
       <div className="flex justify-end gap-4">

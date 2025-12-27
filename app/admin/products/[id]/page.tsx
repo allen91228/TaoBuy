@@ -83,17 +83,31 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
           const p = data.data
           setProduct(p)
           
-          // 解析变体数据
-          const variants: Variant[] = p.metadata?.variants 
-            ? p.metadata.variants.map((v: any) => ({
-                id: v.id || `variant-${Date.now()}-${Math.random()}`,
-                specifications: v.specifications || {},
-                price: typeof v.price === 'string' ? parseFloat(v.price) : v.price,
+          // 调试日志
+          console.log('[EDIT] Product metadata:', p.metadata)
+          console.log('[EDIT] Variants from metadata:', p.metadata?.variants)
+          
+          // 解析变体数据 - 改进解析逻辑
+          let variants: Variant[] = []
+          if (p.metadata?.variants && Array.isArray(p.metadata.variants)) {
+            variants = p.metadata.variants
+              .filter((v: any) => v !== null && v !== undefined) // 过滤掉 null/undefined
+              .map((v: any, index: number) => ({
+                id: v.id || `variant-${Date.now()}-${index}`,
+                specifications: v.specifications && typeof v.specifications === 'object' 
+                  ? v.specifications 
+                  : {},
+                price: v.price !== null && v.price !== undefined
+                  ? (typeof v.price === 'string' ? parseFloat(v.price) : v.price)
+                  : 0,
                 sku: v.sku || null,
                 image: v.image || null,
                 images: v.images && Array.isArray(v.images) ? v.images : undefined,
               }))
-            : []
+          }
+          
+          console.log('[EDIT] Parsed variants:', variants)
+          console.log('[EDIT] Variants count:', variants.length)
           
           const initialFormData = {
             name: p.name || "",
@@ -113,6 +127,8 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
           setFormData(initialFormData)
           initialDataRef.current = JSON.stringify(initialFormData)
           isInitialLoadRef.current = false
+          
+          console.log('[EDIT] FormData variants:', initialFormData.variants)
         }
       } catch (error) {
         console.error("獲取商品錯誤:", error)
@@ -501,14 +517,23 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
             </CardContent>
           </Card>
 
-          {/* 變體管理 */}
-          {formData.variants.length > 0 && (
-            <Card className="md:col-span-2">
-              <CardHeader>
-                <CardTitle>商品變體</CardTitle>
-                <CardDescription>編輯每個變體的規格和價格</CardDescription>
-              </CardHeader>
-              <CardContent>
+          {/* 變體管理 - 始终显示 */}
+          <Card className="md:col-span-2">
+            <CardHeader>
+              <CardTitle>商品變體</CardTitle>
+              <CardDescription>編輯每個變體的規格和價格</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {formData.variants.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-sm text-muted-foreground mb-4">
+                    尚無變體數據
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    變體數據存儲在商品的 metadata.variants 中
+                  </p>
+                </div>
+              ) : (
                 <div className="space-y-6">
                   {formData.variants.map((variant, variantIndex) => (
                     <div key={variant.id} className="border rounded-lg p-4 space-y-4">
@@ -639,9 +664,9 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
                     </div>
                   ))}
                 </div>
-              </CardContent>
-            </Card>
-          )}
+              )}
+            </CardContent>
+          </Card>
         </div>
 
         <div className="mt-6 flex justify-end gap-4">
