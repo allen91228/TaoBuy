@@ -6,6 +6,7 @@ import { ImportStatus } from '@prisma/client'
 
 // 強制動態執行，不使用靜態優化
 export const dynamic = 'force-dynamic'
+export const runtime = 'nodejs'
 
 // 請求 Body 類型定義
 interface ImportProductRequest {
