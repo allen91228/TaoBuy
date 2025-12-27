@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
 import { generateSlug, extractExternalIdFromUrl } from '@/lib/slug'
 import { ImportStatus } from '@prisma/client'
@@ -50,33 +49,10 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 2. 驗證用戶是否已登入
-    const { userId } = await auth()
-    
-    if (!userId) {
-      return NextResponse.json(
-        { error: '未授權：請先登入' },
-        { status: 401, headers: corsHeaders }
-      )
-    }
-
-    // 3. 驗證用戶是否為 Admin
-    const user = await prisma.user.findUnique({
-      where: { clerkId: userId },
-      select: { role: true },
-    })
-
-    if (!user || user.role !== 'ADMIN') {
-      return NextResponse.json(
-        { error: '禁止訪問：需要管理員權限' },
-        { status: 403, headers: corsHeaders }
-      )
-    }
-
-    // 4. 解析請求 Body
+    // 2. 解析請求 Body
     const body: ImportProductRequest = await request.json()
 
-    // 5. 驗證必要欄位
+    // 3. 驗證必要欄位
     if (!body.sourceUrl || !body.title || !body.images || body.images.length === 0) {
       return NextResponse.json(
         { error: '缺少必要欄位：sourceUrl, title, images 為必填' },
@@ -91,7 +67,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 6. 處理 externalId：優先使用提供的，否則從 URL 提取
+    // 4. 處理 externalId：優先使用提供的，否則從 URL 提取
     let externalId = body.externalId || extractExternalIdFromUrl(body.sourceUrl)
     
     if (!externalId) {
@@ -99,13 +75,13 @@ export async function POST(request: NextRequest) {
       externalId = `url-${Buffer.from(body.sourceUrl).toString('base64').slice(0, 50)}`
     }
 
-    // 7. 檢查商品是否已存在（根據 externalId）
+    // 5. 檢查商品是否已存在（根據 externalId）
     const existingProduct = await prisma.product.findUnique({
       where: { externalId: externalId },
       select: { id: true, slug: true },
     })
 
-    // 8. 生成 slug
+    // 6. 生成 slug
     let slug: string
     
     if (existingProduct) {
@@ -124,7 +100,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // 9. 準備商品資料
+    // 7. 準備商品資料
     const productData = {
       name: body.title,
       slug: slug,
@@ -142,7 +118,7 @@ export async function POST(request: NextRequest) {
       metadata: body.specifications ? (typeof body.specifications === 'object' ? body.specifications : null) : null,
     }
 
-    // 10. 使用 Upsert 來建立或更新商品
+    // 8. 使用 Upsert 來建立或更新商品
     const product = await prisma.product.upsert({
       where: {
         externalId: externalId,
@@ -160,7 +136,7 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    // 11. 返回成功回應
+    // 9. 返回成功回應
     return NextResponse.json(
       {
         success: true,
