@@ -281,6 +281,44 @@ export default function ReviewProductPage({ params }: { params: Promise<{ id: st
     await handleSave(true)
   }
 
+  const handleDeleteProduct = async () => {
+    if (!productId) return
+    
+    if (!confirm('確定要刪除此商品嗎？此操作無法復原。')) {
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/admin/products/${productId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        // 删除成功后，获取下一个待审核商品
+        const nextResponse = await fetch(`/api/admin/products/review/next?currentId=${productId}`, {
+          credentials: 'include',
+        })
+        const nextData = await nextResponse.json()
+
+        if (nextData.success && nextData.data) {
+          // 跳转到下一个待审核商品
+          router.push(`/admin/products/review/${nextData.data.id}`)
+        } else {
+          // 没有下一个了，返回列表
+          router.push("/admin/products/review")
+        }
+      } else {
+        alert(data.error || "刪除失敗")
+      }
+    } catch (error) {
+      console.error("刪除商品錯誤:", error)
+      alert("刪除失敗")
+    }
+  }
+
   const handleDeleteVariant = (variantIndex: number) => {
     if (confirm('確定要刪除此變體嗎？')) {
       const updatedVariants = formData.variants.filter((_, index) => index !== variantIndex)
@@ -632,29 +670,43 @@ export default function ReviewProductPage({ params }: { params: Promise<{ id: st
       </Card>
 
       {/* 操作按鈕 */}
-      <div className="flex justify-end gap-4">
-        <Link href="/admin/products/review">
-          <Button type="button" variant="outline">取消</Button>
-        </Link>
+      <div className="flex justify-between items-center gap-4">
+        {/* 左側：刪除按鈕 */}
         <Button
           type="button"
-          variant="outline"
-          onClick={handleSaveAndNext}
+          variant="destructive"
+          onClick={handleDeleteProduct}
           disabled={saving}
         >
-          <Save className="mr-2 h-4 w-4" />
-          {saving ? "儲存中..." : "儲存下一個"}
+          <Trash2 className="mr-2 h-4 w-4" />
+          刪除商品
         </Button>
-        <Button
-          type="button"
-          variant="default"
-          onClick={handlePublishAndNext}
-          disabled={saving || product?.prohibitedFromChina}
-          title={product?.prohibitedFromChina ? "此商品禁止從中國進口，無法發布" : ""}
-        >
-          <CheckCircle className="mr-2 h-4 w-4" />
-          {saving ? "發布中..." : "發布並下一個"}
-        </Button>
+
+        {/* 右側：其他操作按鈕 */}
+        <div className="flex gap-4">
+          <Link href="/admin/products/review">
+            <Button type="button" variant="outline">取消</Button>
+          </Link>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleSaveAndNext}
+            disabled={saving}
+          >
+            <Save className="mr-2 h-4 w-4" />
+            {saving ? "儲存中..." : "儲存下一個"}
+          </Button>
+          <Button
+            type="button"
+            variant="default"
+            onClick={handlePublishAndNext}
+            disabled={saving || product?.prohibitedFromChina}
+            title={product?.prohibitedFromChina ? "此商品禁止從中國進口，無法發布" : ""}
+          >
+            <CheckCircle className="mr-2 h-4 w-4" />
+            {saving ? "發布中..." : "發布並下一個"}
+          </Button>
+        </div>
       </div>
     </div>
   )
