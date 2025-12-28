@@ -549,6 +549,33 @@ export default function ReviewProductPage({ params }: { params: Promise<{ id: st
                     </Button>
                   </div>
                   
+                  {/* 變體圖片 */}
+                  {(variant.images && variant.images.length > 0) || variant.image ? (
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">變體圖片</label>
+                      <div className="grid grid-cols-3 gap-3">
+                        {(variant.images && variant.images.length > 0 ? variant.images : [variant.image]).map((imgUrl, imgIndex) => (
+                          imgUrl && (
+                            <div key={imgIndex} className="relative aspect-square w-full overflow-hidden rounded-lg border">
+                              <Image
+                                src={imgUrl}
+                                alt={`變體 ${variantIndex + 1} 圖片 ${imgIndex + 1}`}
+                                fill
+                                className="object-cover"
+                                sizes="(max-width: 768px) 33vw, 150px"
+                              />
+                            </div>
+                          )
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">變體圖片</label>
+                      <p className="text-sm text-muted-foreground">此變體尚無圖片</p>
+                    </div>
+                  )}
+                  
                   {/* 規格編輯 */}
                   <div>
                     <label className="text-sm font-medium mb-2 block">規格</label>
