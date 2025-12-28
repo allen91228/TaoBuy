@@ -199,7 +199,7 @@ export async function POST(request: NextRequest) {
     
     // 處理關稅資訊
     const customsInfo = body.customsDutyInfo
-    const productData = {
+    const productData: any = {
       name: body.title,
       slug: slug,
       description: body.description || null,
@@ -223,7 +223,14 @@ export async function POST(request: NextRequest) {
       needsNCC: customsInfo?.regulations?.needsNCC || false,
       needsFDA: customsInfo?.regulations?.needsFDA || false,
       prohibitedFromChina: customsInfo?.regulations?.prohibitedFromChina || false,
-      customsWarnings: customsInfo?.warnings && Array.isArray(customsInfo.warnings) ? customsInfo.warnings : null,
+    }
+    
+    // 處理 customsWarnings JSON 字段
+    if (customsInfo?.warnings && Array.isArray(customsInfo.warnings) && customsInfo.warnings.length > 0) {
+      productData.customsWarnings = customsInfo.warnings
+    } else {
+      // 使用空數組而不是 null，因為 Prisma JSON 字段更適合使用空數組
+      productData.customsWarnings = []
     }
 
     // 7.1 驗證資料完整性

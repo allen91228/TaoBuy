@@ -128,7 +128,9 @@ export async function PUT(
         needsNCC: body.needsNCC !== undefined ? body.needsNCC : false,
         needsFDA: body.needsFDA !== undefined ? body.needsFDA : false,
         prohibitedFromChina: body.prohibitedFromChina !== undefined ? body.prohibitedFromChina : false,
-        customsWarnings: body.customsWarnings !== undefined ? body.customsWarnings : null,
+        customsWarnings: body.customsWarnings !== undefined && Array.isArray(body.customsWarnings) && body.customsWarnings.length > 0
+          ? body.customsWarnings
+          : [],
       },
     })
 
