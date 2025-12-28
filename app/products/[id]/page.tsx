@@ -120,36 +120,38 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
     }))
   }
 
-  // 解析規格數據 - 从变体中自动生成规格选项
+  // 解析規格數據 - 优先从变体中自动生成规格选项
   const getSpecificationOptions = (): Record<string, string[]> => {
     const variants = getVariants()
     
-    // 如果数据库中有 specificationOptions，优先使用
+    // 优先从变体中自动生成
+    if (variants.length > 0) {
+      const specOptions: Record<string, Set<string>> = {}
+      
+      variants.forEach((variant) => {
+        Object.entries(variant.specifications || {}).forEach(([key, value]) => {
+          if (!specOptions[key]) {
+            specOptions[key] = new Set()
+          }
+          specOptions[key].add(value)
+        })
+      })
+      
+      // 转换为数组格式
+      const result: Record<string, string[]> = {}
+      Object.entries(specOptions).forEach(([key, values]) => {
+        result[key] = Array.from(values)
+      })
+      
+      return result
+    }
+    
+    // 如果没有变体，使用数据库中的 specificationOptions 作为备用
     if (product?.metadata?.specificationOptions) {
       return product.metadata.specificationOptions
     }
     
-    // 否则从变体中自动生成
-    if (variants.length === 0) return {}
-    
-    const specOptions: Record<string, Set<string>> = {}
-    
-    variants.forEach((variant) => {
-      Object.entries(variant.specifications || {}).forEach(([key, value]) => {
-        if (!specOptions[key]) {
-          specOptions[key] = new Set()
-        }
-        specOptions[key].add(value)
-      })
-    })
-    
-    // 转换为数组格式
-    const result: Record<string, string[]> = {}
-    Object.entries(specOptions).forEach(([key, values]) => {
-      result[key] = Array.from(values)
-    })
-    
-    return result
+    return {}
   }
 
   // 根據選擇的規格查找匹配的變體
