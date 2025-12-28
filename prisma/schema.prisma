@@ -70,6 +70,18 @@ model Product {
   importStatus  ImportStatus @default(DRAFT) // 匯入狀態
   metadata      Json?       // 用來儲存淘寶那邊不固定的詳細規格數據
   
+  // 關稅資訊欄位
+  customsDuty      Decimal?    @db.Decimal(10, 2)  // 進口關稅（台幣）
+  commodityTax     Decimal?    @db.Decimal(10, 2)   // 貨物稅（台幣）
+  businessTax      Decimal?    @db.Decimal(10, 2)   // 營業稅（台幣）
+  totalTax         Decimal?    @db.Decimal(10, 2)   // 總稅額（台幣）
+  hsCode           String?                          // HS Code（CCC Code 前6-8碼）
+  needsBSMI        Boolean     @default(false)      // 是否需要 BSMI 商檢
+  needsNCC         Boolean     @default(false)      // 是否需要 NCC 認證
+  needsFDA         Boolean     @default(false)      // 是否屬於 FDA 管制
+  prohibitedFromChina Boolean  @default(false)      // 是否禁止從中國進口
+  customsWarnings   Json?                           // 監管警告訊息陣列
+  
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
   

@@ -27,19 +27,36 @@ interface Variant {
   images?: string[] // 變體圖片陣列（可選）
 }
 
+// 關稅資訊類型定義
+interface CustomsDutyInfo {
+  customsDuty: number // 進口關稅（台幣）
+  commodityTax: number // 貨物稅（台幣）
+  businessTax: number // 營業稅（台幣）
+  totalTax: number // 總稅額（台幣）
+  hsCode: string | null // HS Code（CCC Code 前6-8碼）
+  regulations: {
+    needsBSMI: boolean // 是否需要 BSMI 商檢
+    needsNCC: boolean // 是否需要 NCC 認證
+    needsFDA: boolean // 是否屬於 FDA 管制
+    prohibitedFromChina: boolean // 是否禁止從中國進口
+  }
+  warnings: string[] // 監管警告訊息陣列
+}
+
 // 請求 Body 類型定義
 interface ImportProductRequest {
   sourceUrl: string // 淘寶網址
   title: string // 標題
   images: string[] // 圖片陣列
   originalPrice: number // 原始價格（人民幣）
-  price: number // 本地售價（TWD）- 基礎價格
+  price: number // 本地售價（TWD）- 基礎價格（已包含關稅）
   specifications?: Record<string, any> // 規格（可選，舊格式，向後兼容）
   description?: string // 商品描述（可選）
   category?: string // 分類（可選）
   externalId?: string // 外部 ID（可選，如果不提供則從 URL 提取）
   variants?: Variant[] // 變體列表（可選）
   specificationOptions?: Record<string, string[]> // 規格選項，如 { "颜色": ["红色", "蓝色"], "尺寸": ["S", "M", "L"] }
+  customsDutyInfo?: CustomsDutyInfo // 關稅資訊（可選）
 }
 
 // 處理 CORS 預檢請求
@@ -116,6 +133,41 @@ export async function POST(request: NextRequest) {
     // 7. 準備商品資料
     // 確保 price 和 originalPrice 正確轉換為 Prisma Decimal 類型
     
+    // 7.0 驗證和處理關稅資訊
+    let importStatus = ImportStatus.DRAFT
+    if (body.customsDutyInfo) {
+      const customs = body.customsDutyInfo
+      
+      // 驗證關稅資訊格式
+      if (typeof customs !== 'object') {
+        return NextResponse.json(
+          { error: '關稅資訊格式錯誤：customsDutyInfo 必須是對象' },
+          { status: 400, headers: corsHeaders }
+        )
+      }
+      
+      // 驗證數值字段
+      if (typeof customs.customsDuty !== 'number' || customs.customsDuty < 0 ||
+          typeof customs.commodityTax !== 'number' || customs.commodityTax < 0 ||
+          typeof customs.businessTax !== 'number' || customs.businessTax < 0 ||
+          typeof customs.totalTax !== 'number' || customs.totalTax < 0) {
+        return NextResponse.json(
+          { error: '關稅資訊格式錯誤：稅額必須為非負數' },
+          { status: 400, headers: corsHeaders }
+        )
+      }
+      
+      // 檢查是否禁止從中國進口
+      if (customs.regulations?.prohibitedFromChina === true) {
+        // 標記為同步錯誤狀態，需要人工審核
+        importStatus = ImportStatus.SYNC_ERROR
+        console.warn('商品禁止從中國進口:', {
+          externalId: body.externalId || 'unknown',
+          title: body.title,
+        })
+      }
+    }
+    
     // 構建 metadata 對象，包含變體和規格選項
     let metadata: any = null
     if (body.variants || body.specificationOptions || body.specifications) {
@@ -145,6 +197,8 @@ export async function POST(request: NextRequest) {
       }
     }
     
+    // 處理關稅資訊
+    const customsInfo = body.customsDutyInfo
     const productData = {
       name: body.title,
       slug: slug,
@@ -152,13 +206,24 @@ export async function POST(request: NextRequest) {
       image: body.images[0] || null,
       images: body.images,
       category: body.category || null,
-      price: new Prisma.Decimal(body.price), // 轉換為 Prisma Decimal
+      price: new Prisma.Decimal(body.price), // 轉換為 Prisma Decimal（已包含關稅）
       isActive: true, // 匯入的商品自動啟用
       sourceUrl: body.sourceUrl,
       externalId: externalId,
       originalPrice: body.originalPrice ? new Prisma.Decimal(body.originalPrice) : null, // 轉換為 Prisma Decimal
-      importStatus: ImportStatus.DRAFT, // 匯入後預設為草稿狀態，需要審核後才能發布
+      importStatus: importStatus, // 如果禁止進口則為 SYNC_ERROR，否則為 DRAFT
       metadata: metadata as any,
+      // 關稅資訊欄位
+      customsDuty: customsInfo ? new Prisma.Decimal(customsInfo.customsDuty) : null,
+      commodityTax: customsInfo ? new Prisma.Decimal(customsInfo.commodityTax) : null,
+      businessTax: customsInfo ? new Prisma.Decimal(customsInfo.businessTax) : null,
+      totalTax: customsInfo ? new Prisma.Decimal(customsInfo.totalTax) : null,
+      hsCode: customsInfo?.hsCode || null,
+      needsBSMI: customsInfo?.regulations?.needsBSMI || false,
+      needsNCC: customsInfo?.regulations?.needsNCC || false,
+      needsFDA: customsInfo?.regulations?.needsFDA || false,
+      prohibitedFromChina: customsInfo?.regulations?.prohibitedFromChina || false,
+      customsWarnings: customsInfo?.warnings && Array.isArray(customsInfo.warnings) ? customsInfo.warnings : null,
     }
 
     // 7.1 驗證資料完整性

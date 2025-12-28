@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { checkApiSecretAuth } from '@/lib/api-secret-auth'
-import { ImportStatus } from '@prisma/client'
+import { ImportStatus, Prisma } from '@prisma/client'
 
 export const dynamic = 'force-dynamic'
 
@@ -110,6 +110,25 @@ export async function PUT(
         importStatus: body.importStatus as ImportStatus,
         isActive: body.isActive,
         metadata: body.metadata,
+        // 關稅資訊欄位
+        customsDuty: body.customsDuty !== undefined && body.customsDuty !== null 
+          ? new Prisma.Decimal(body.customsDuty) 
+          : null,
+        commodityTax: body.commodityTax !== undefined && body.commodityTax !== null 
+          ? new Prisma.Decimal(body.commodityTax) 
+          : null,
+        businessTax: body.businessTax !== undefined && body.businessTax !== null 
+          ? new Prisma.Decimal(body.businessTax) 
+          : null,
+        totalTax: body.totalTax !== undefined && body.totalTax !== null 
+          ? new Prisma.Decimal(body.totalTax) 
+          : null,
+        hsCode: body.hsCode || null,
+        needsBSMI: body.needsBSMI !== undefined ? body.needsBSMI : false,
+        needsNCC: body.needsNCC !== undefined ? body.needsNCC : false,
+        needsFDA: body.needsFDA !== undefined ? body.needsFDA : false,
+        prohibitedFromChina: body.prohibitedFromChina !== undefined ? body.prohibitedFromChina : false,
+        customsWarnings: body.customsWarnings !== undefined ? body.customsWarnings : null,
       },
     })
 

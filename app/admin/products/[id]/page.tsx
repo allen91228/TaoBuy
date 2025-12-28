@@ -33,6 +33,17 @@ interface Product {
   importStatus: string
   isActive: boolean
   metadata: any
+  // 關稅資訊欄位
+  customsDuty?: any | null
+  commodityTax?: any | null
+  businessTax?: any | null
+  totalTax?: any | null
+  hsCode?: string | null
+  needsBSMI?: boolean
+  needsNCC?: boolean
+  needsFDA?: boolean
+  prohibitedFromChina?: boolean
+  customsWarnings?: string[] | null
 }
 
 export default function EditProductPage({ params }: { params: Promise<{ id: string }> }) {
@@ -56,6 +67,17 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
     importStatus: "DRAFT",
     isActive: true,
     variants: [] as Variant[],
+    // 關稅資訊欄位
+    customsDuty: "",
+    commodityTax: "",
+    businessTax: "",
+    totalTax: "",
+    hsCode: "",
+    needsBSMI: false,
+    needsNCC: false,
+    needsFDA: false,
+    prohibitedFromChina: false,
+    customsWarnings: [] as string[],
   })
   const initialDataRef = useRef<string>("")
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null)
@@ -153,6 +175,17 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
             importStatus: p.importStatus || "DRAFT",
             isActive: p.isActive !== undefined ? p.isActive : true,
             variants: variants,
+            // 關稅資訊欄位
+            customsDuty: p.customsDuty?.toString() || "",
+            commodityTax: p.commodityTax?.toString() || "",
+            businessTax: p.businessTax?.toString() || "",
+            totalTax: p.totalTax?.toString() || "",
+            hsCode: p.hsCode || "",
+            needsBSMI: p.needsBSMI || false,
+            needsNCC: p.needsNCC || false,
+            needsFDA: p.needsFDA || false,
+            prohibitedFromChina: p.prohibitedFromChina || false,
+            customsWarnings: Array.isArray(p.customsWarnings) ? p.customsWarnings : [],
           }
           setFormData(initialFormData)
           initialDataRef.current = JSON.stringify(initialFormData)
@@ -252,6 +285,17 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
           price: parseFloat(formData.price) || 0,
           originalPrice: formData.originalPrice ? parseFloat(formData.originalPrice) : null,
           metadata: updatedMetadata,
+          // 關稅資訊欄位
+          customsDuty: formData.customsDuty ? parseFloat(formData.customsDuty) : null,
+          commodityTax: formData.commodityTax ? parseFloat(formData.commodityTax) : null,
+          businessTax: formData.businessTax ? parseFloat(formData.businessTax) : null,
+          totalTax: formData.totalTax ? parseFloat(formData.totalTax) : null,
+          hsCode: formData.hsCode || null,
+          needsBSMI: formData.needsBSMI,
+          needsNCC: formData.needsNCC,
+          needsFDA: formData.needsFDA,
+          prohibitedFromChina: formData.prohibitedFromChina,
+          customsWarnings: formData.customsWarnings,
         }),
       })
 
@@ -329,6 +373,17 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
           price: parseFloat(formData.price) || 0,
           originalPrice: formData.originalPrice ? parseFloat(formData.originalPrice) : null,
           metadata: updatedMetadata,
+          // 關稅資訊欄位
+          customsDuty: formData.customsDuty ? parseFloat(formData.customsDuty) : null,
+          commodityTax: formData.commodityTax ? parseFloat(formData.commodityTax) : null,
+          businessTax: formData.businessTax ? parseFloat(formData.businessTax) : null,
+          totalTax: formData.totalTax ? parseFloat(formData.totalTax) : null,
+          hsCode: formData.hsCode || null,
+          needsBSMI: formData.needsBSMI,
+          needsNCC: formData.needsNCC,
+          needsFDA: formData.needsFDA,
+          prohibitedFromChina: formData.prohibitedFromChina,
+          customsWarnings: formData.customsWarnings,
         }),
       })
 
@@ -404,6 +459,17 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
           price: parseFloat(formData.price),
           originalPrice: formData.originalPrice ? parseFloat(formData.originalPrice) : null,
           metadata: updatedMetadata,
+          // 關稅資訊欄位
+          customsDuty: formData.customsDuty ? parseFloat(formData.customsDuty) : null,
+          commodityTax: formData.commodityTax ? parseFloat(formData.commodityTax) : null,
+          businessTax: formData.businessTax ? parseFloat(formData.businessTax) : null,
+          totalTax: formData.totalTax ? parseFloat(formData.totalTax) : null,
+          hsCode: formData.hsCode || null,
+          needsBSMI: formData.needsBSMI,
+          needsNCC: formData.needsNCC,
+          needsFDA: formData.needsFDA,
+          prohibitedFromChina: formData.prohibitedFromChina,
+          customsWarnings: formData.customsWarnings,
         }),
       })
 
@@ -568,6 +634,80 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
                   啟用商品
                 </label>
               </div>
+
+              {/* 關稅資訊 */}
+              {(formData.totalTax || formData.hsCode || formData.prohibitedFromChina || formData.needsBSMI || formData.needsNCC || formData.needsFDA || (formData.customsWarnings && formData.customsWarnings.length > 0)) && (
+                <div className="border-t pt-4 mt-4 space-y-3">
+                  <h4 className="text-sm font-semibold">關稅資訊</h4>
+                  
+                  {formData.prohibitedFromChina && (
+                    <div className="bg-red-50 border border-red-200 rounded-md p-3">
+                      <p className="text-sm font-medium text-red-800">⚠️ 禁止從中國進口</p>
+                      <p className="text-xs text-red-600 mt-1">此商品禁止從中國進口，需要人工審核</p>
+                    </div>
+                  )}
+
+                  {formData.customsWarnings && formData.customsWarnings.length > 0 && (
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3">
+                      <p className="text-sm font-medium text-yellow-800 mb-2">監管警告</p>
+                      <ul className="list-disc list-inside text-xs text-yellow-700 space-y-1">
+                        {formData.customsWarnings.map((warning, idx) => (
+                          <li key={idx}>{warning}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-xs text-muted-foreground">進口關稅</label>
+                      <p className="text-sm font-medium">{formData.customsDuty ? `NT$ ${parseFloat(formData.customsDuty).toLocaleString()}` : '-'}</p>
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground">貨物稅</label>
+                      <p className="text-sm font-medium">{formData.commodityTax ? `NT$ ${parseFloat(formData.commodityTax).toLocaleString()}` : '-'}</p>
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground">營業稅</label>
+                      <p className="text-sm font-medium">{formData.businessTax ? `NT$ ${parseFloat(formData.businessTax).toLocaleString()}` : '-'}</p>
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground">總稅額</label>
+                      <p className="text-sm font-medium">{formData.totalTax ? `NT$ ${parseFloat(formData.totalTax).toLocaleString()}` : '-'}</p>
+                    </div>
+                  </div>
+
+                  {formData.hsCode && (
+                    <div>
+                      <label className="text-xs text-muted-foreground">HS Code</label>
+                      <p className="text-sm font-medium">{formData.hsCode}</p>
+                    </div>
+                  )}
+
+                  {(formData.needsBSMI || formData.needsNCC || formData.needsFDA) && (
+                    <div>
+                      <label className="text-xs text-muted-foreground">監管要求</label>
+                      <div className="flex flex-wrap gap-2 mt-1">
+                        {formData.needsBSMI && (
+                          <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-blue-100 text-blue-800">
+                            BSMI 商檢
+                          </span>
+                        )}
+                        {formData.needsNCC && (
+                          <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-purple-100 text-purple-800">
+                            NCC 認證
+                          </span>
+                        )}
+                        {formData.needsFDA && (
+                          <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-green-100 text-green-800">
+                            FDA 管制
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </CardContent>
           </Card>
 

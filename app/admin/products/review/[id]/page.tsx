@@ -34,6 +34,17 @@ interface Product {
   importStatus: string
   isActive: boolean
   metadata: any
+  // 關稅資訊欄位
+  customsDuty?: any | null
+  commodityTax?: any | null
+  businessTax?: any | null
+  totalTax?: any | null
+  hsCode?: string | null
+  needsBSMI?: boolean
+  needsNCC?: boolean
+  needsFDA?: boolean
+  prohibitedFromChina?: boolean
+  customsWarnings?: string[] | null
 }
 
 export default function ReviewProductPage({ params }: { params: Promise<{ id: string }> }) {
@@ -171,6 +182,12 @@ export default function ReviewProductPage({ params }: { params: Promise<{ id: st
 
   const handleSave = async (publish: boolean = false) => {
     if (!productId || saving) return
+
+    // 檢查是否禁止進口
+    if (publish && product?.prohibitedFromChina) {
+      alert('此商品禁止從中國進口，無法發布。請聯繫管理員處理。')
+      return
+    }
 
     setSaving(true)
 
@@ -344,6 +361,80 @@ export default function ReviewProductPage({ params }: { params: Promise<{ id: st
                 <StatusBadge status={product.importStatus} />
               </div>
             </div>
+
+            {/* 關稅資訊 */}
+            {(product.totalTax || product.hsCode || product.prohibitedFromChina || product.needsBSMI || product.needsNCC || product.needsFDA || (product.customsWarnings && Array.isArray(product.customsWarnings) && product.customsWarnings.length > 0)) && (
+              <div className="border-t pt-4 mt-4 space-y-3">
+                <h4 className="text-sm font-semibold">關稅資訊</h4>
+                
+                {product.prohibitedFromChina && (
+                  <div className="bg-red-50 border border-red-200 rounded-md p-3">
+                    <p className="text-sm font-medium text-red-800">⚠️ 禁止從中國進口</p>
+                    <p className="text-xs text-red-600 mt-1">此商品禁止從中國進口，無法發布</p>
+                  </div>
+                )}
+
+                {product.customsWarnings && Array.isArray(product.customsWarnings) && product.customsWarnings.length > 0 && (
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3">
+                    <p className="text-sm font-medium text-yellow-800 mb-2">監管警告</p>
+                    <ul className="list-disc list-inside text-xs text-yellow-700 space-y-1">
+                      {product.customsWarnings.map((warning: string, idx: number) => (
+                        <li key={idx}>{warning}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs text-muted-foreground">進口關稅</label>
+                    <p className="text-sm font-medium">{product.customsDuty ? `NT$ ${parseFloat(product.customsDuty.toString()).toLocaleString()}` : '-'}</p>
+                  </div>
+                  <div>
+                    <label className="text-xs text-muted-foreground">貨物稅</label>
+                    <p className="text-sm font-medium">{product.commodityTax ? `NT$ ${parseFloat(product.commodityTax.toString()).toLocaleString()}` : '-'}</p>
+                  </div>
+                  <div>
+                    <label className="text-xs text-muted-foreground">營業稅</label>
+                    <p className="text-sm font-medium">{product.businessTax ? `NT$ ${parseFloat(product.businessTax.toString()).toLocaleString()}` : '-'}</p>
+                  </div>
+                  <div>
+                    <label className="text-xs text-muted-foreground">總稅額</label>
+                    <p className="text-sm font-medium">{product.totalTax ? `NT$ ${parseFloat(product.totalTax.toString()).toLocaleString()}` : '-'}</p>
+                  </div>
+                </div>
+
+                {product.hsCode && (
+                  <div>
+                    <label className="text-xs text-muted-foreground">HS Code</label>
+                    <p className="text-sm font-medium">{product.hsCode}</p>
+                  </div>
+                )}
+
+                {(product.needsBSMI || product.needsNCC || product.needsFDA) && (
+                  <div>
+                    <label className="text-xs text-muted-foreground">監管要求</label>
+                    <div className="flex flex-wrap gap-2 mt-1">
+                      {product.needsBSMI && (
+                        <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-blue-100 text-blue-800">
+                          BSMI 商檢
+                        </span>
+                      )}
+                      {product.needsNCC && (
+                        <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-purple-100 text-purple-800">
+                          NCC 認證
+                        </span>
+                      )}
+                      {product.needsFDA && (
+                        <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-green-100 text-green-800">
+                          FDA 管制
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -558,7 +649,8 @@ export default function ReviewProductPage({ params }: { params: Promise<{ id: st
           type="button"
           variant="default"
           onClick={handlePublishAndNext}
-          disabled={saving}
+          disabled={saving || product?.prohibitedFromChina}
+          title={product?.prohibitedFromChina ? "此商品禁止從中國進口，無法發布" : ""}
         >
           <CheckCircle className="mr-2 h-4 w-4" />
           {saving ? "發布中..." : "發布並下一個"}
