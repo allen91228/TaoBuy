@@ -190,9 +190,6 @@ export default function Home() {
         <h1 className="text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl">
           歡迎來到淘買
         </h1>
-        <p className="max-w-[700px] text-lg text-muted-foreground sm:text-xl">
-          現代化的全端電商平台，提供優質的購物體驗
-        </p>
         
         {/* 服務說明 */}
         <div className="max-w-[800px] w-full bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6 mt-4">
