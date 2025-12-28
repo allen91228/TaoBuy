@@ -193,6 +193,16 @@ export default function Home() {
         <p className="max-w-[700px] text-lg text-muted-foreground sm:text-xl">
           現代化的全端電商平台，提供優質的購物體驗
         </p>
+        
+        {/* 服務說明 */}
+        <div className="max-w-[800px] w-full bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6 mt-4">
+          <p className="text-base sm:text-lg text-foreground leading-relaxed">
+            <span className="font-semibold text-blue-700 dark:text-blue-300">買淘寶，何必親自處理關稅？</span>
+            <br />
+            本站專注於提供優質的代購與轉運服務（非淘寶官方站點）。從下單那一刻起，複雜的跨境運輸、海關申報與關稅繳納，全由我們幫您專業代辦。您只需在家等待包裹，享受零卡關的購物體驗。
+          </p>
+        </div>
+        
         <Link href="/products">
           <Button size="lg" className="text-lg px-8">
             看看新商品
