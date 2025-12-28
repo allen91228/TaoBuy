@@ -134,7 +134,7 @@ export async function POST(request: NextRequest) {
     // 確保 price 和 originalPrice 正確轉換為 Prisma Decimal 類型
     
     // 7.0 驗證和處理關稅資訊
-    let importStatus = ImportStatus.DRAFT
+    let importStatus: ImportStatus = ImportStatus.DRAFT
     if (body.customsDutyInfo) {
       const customs = body.customsDutyInfo
       
